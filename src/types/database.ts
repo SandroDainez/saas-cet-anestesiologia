@@ -17,12 +17,25 @@ export type LessonStepType =
   | "checkpoint";
 export type ProgressStatus = "not_started" | "in_progress" | "completed" | "mastered";
 export type QuestionDifficulty = "easy" | "medium" | "hard";
-export type QuestionTypeEnum = "single_choice" | "multiple_choice" | "true_false" | "matching" | "case_sequential" | "image_based";
+export type QuestionTypeEnum =
+  | "single_choice"
+  | "multiple_choice"
+  | "true_false"
+  | "matching"
+  | "case_sequential"
+  | "image_based"
+  | "sba_true_false";
 export type EditorialStatus = "draft" | "under_review" | "approved" | "published" | "archived";
 export type SourceGenerationType = "human" | "ai_derived" | "hybrid";
 export type TagTypeEnum = "topic" | "skill" | "specialty" | "difficulty" | "emergency" | "procedure";
 export type AttemptMode = "practice" | "exam" | "review" | "spaced_repetition";
-export type ExamTypeEnum = "quarterly" | "annual" | "mock" | "mini_test" | "oral_simulation";
+export type ExamTypeEnum =
+  | "quarterly"
+  | "annual"
+  | "training_short"
+  | "mock"
+  | "mini_test"
+  | "oral_simulation";
 export type ExamStatus = "draft" | "scheduled" | "open" | "closed" | "published";
 export type ExamAttemptStatus = "in_progress" | "submitted" | "graded" | "expired";
 export type EmergencyCategory =
@@ -204,8 +217,16 @@ export interface TraineeModuleProgress {
 
 export type StudyGoalStatus = "active" | "completed" | "expired";
 export type StudyGoalItemType = "lesson" | "question_set" | "emergency";
-export type ContentRefreshReason = "scheduled_daily" | "goal_completed" | "manual_admin";
+export type ContentRefreshReason =
+  | "scheduled_daily"
+  | "goal_completed"
+  | "manual_admin"
+  | "training_exam_completed"
+  | "quarterly_exam_scheduled"
+  | "annual_exam_scheduled";
 export type ContentRefreshStatus = "queued" | "running" | "completed" | "failed";
+export type ExamRefreshCadence = "weekly" | "monthly" | "on_completion" | "manual";
+export type ExamRefreshScope = "global" | "per_user";
 
 export interface StudyGoal {
   id: string;
@@ -278,6 +299,15 @@ export interface QuestionOption {
   display_order: number;
 }
 
+export interface QuestionAssertion {
+  id: string;
+  question_id: string;
+  assertion_text: string;
+  is_true: boolean;
+  explanation?: string | null;
+  display_order: number;
+}
+
 export interface QuestionTag {
   id: string;
   name: string;
@@ -329,6 +359,12 @@ export interface Exam {
   passing_score?: number | null;
   available_from?: string | null;
   available_until?: string | null;
+  refresh_cadence?: ExamRefreshCadence | null;
+  refresh_scope?: ExamRefreshScope | null;
+  refresh_interval_days?: number | null;
+  refresh_on_completion?: boolean | null;
+  last_refreshed_at?: string | null;
+  next_refresh_at?: string | null;
 }
 
 export interface ExamAttempt {
@@ -597,6 +633,137 @@ export interface ContentSourceSection {
   page_end?: number | null;
   metadata_jsonb: Record<string, unknown>;
   created_at: string;
+}
+
+export type LocalLibrarySourceType =
+  | "book"
+  | "sba_document"
+  | "protocol"
+  | "exam_reference"
+  | "guideline"
+  | "article"
+  | "handout"
+  | "question_reference"
+  | "mixed";
+
+export type LocalLibraryUsage =
+  | "theory"
+  | "interactive-study"
+  | "questions"
+  | "exams"
+  | "emergencies"
+  | "surgery-guides"
+  | "review";
+
+export type LibraryPriority = "low" | "medium" | "high" | "critical";
+
+export interface ContentLibrarySourceEntry {
+  id: string;
+  title: string;
+  filePath: string;
+  sourceType: LocalLibrarySourceType;
+  usage: LocalLibraryUsage[];
+  applicability: TraineeYearCode[];
+  topics: string[];
+  priority: LibraryPriority;
+  notes?: string | null;
+}
+
+export interface ContentLibraryIndex {
+  version: number;
+  lastUpdated: string;
+  sources: ContentLibrarySourceEntry[];
+}
+
+export interface ContentLibrarySourceSummary extends ContentLibrarySourceEntry {
+  absolutePath: string;
+  fileExists: boolean;
+  fileExtension: string;
+  topLevelFolder: string;
+}
+
+export interface ContentLibrarySnapshot {
+  index: ContentLibraryIndex;
+  sources: ContentLibrarySourceSummary[];
+  stats: {
+    totalIndexedSources: number;
+    existingFiles: number;
+    missingFiles: number;
+    byUsage: Record<LocalLibraryUsage, number>;
+    byApplicability: Record<TraineeYearCode, number>;
+  };
+}
+
+export interface ContentLibraryDiscoveryItem {
+  relativePath: string;
+  absolutePath: string;
+  fileExtension: string;
+  topLevelFolder: string;
+  isIndexed: boolean;
+}
+
+export interface ContentLibraryCatalogSuggestion {
+  id: string;
+  title: string;
+  filePath: string;
+  sourceType: LocalLibrarySourceType;
+  usage: LocalLibraryUsage[];
+  applicability: TraineeYearCode[];
+  topics: string[];
+  priority: LibraryPriority;
+  reason: string;
+}
+
+export interface ContentLibraryDiscoveryReport {
+  indexed: ContentLibrarySourceSummary[];
+  unindexedFiles: ContentLibraryDiscoveryItem[];
+  suggestions: ContentLibraryCatalogSuggestion[];
+}
+
+export type LocalExtractionStatus = "ready" | "unsupported" | "missing_file" | "error";
+
+export interface LocalLibraryExtractedSection {
+  id: string;
+  label: string;
+  title: string;
+  excerpt: string;
+}
+
+export interface LocalLibraryExtractionPreview {
+  sourceId: string;
+  filePath: string;
+  status: LocalExtractionStatus;
+  method: "plain_text" | "json_stringify" | "unsupported";
+  sectionCount: number;
+  sections: LocalLibraryExtractedSection[];
+  note?: string | null;
+}
+
+export interface HybridEditorialPolicy {
+  priorityOrder: string[];
+  behaviorNotes: string[];
+  requiresLocalSourcesFirst: boolean;
+  allowExternalResearchWhenLocalExists: boolean;
+}
+
+export interface HybridGenerationPlan {
+  objective: string;
+  preferredYears: TraineeYearCode[];
+  recommendedUsage: LocalLibraryUsage[];
+  localSources: ContentLibrarySourceSummary[];
+  policy: HybridEditorialPolicy;
+}
+
+export type GenerationReadinessMode = "internal_only" | "hybrid_optional" | "local_augmented";
+
+export interface GenerationReadinessItem {
+  id: string;
+  title: string;
+  description: string;
+  mode: GenerationReadinessMode;
+  localSourceCount: number;
+  supportedWithoutLibrary: boolean;
+  recommendedUsage: LocalLibraryUsage[];
 }
 
 export interface ContentItem {

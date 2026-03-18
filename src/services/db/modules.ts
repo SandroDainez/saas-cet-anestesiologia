@@ -2,6 +2,8 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { createServerClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/env";
+import { getContentLibraryExtractionPreviewById } from "@/services/content-library/library-extraction";
+import { getContentLibrarySnapshot } from "@/services/content-library/library-index";
 import type {
   CurriculumSubtopic,
   CurriculumTopic,
@@ -49,6 +51,7 @@ import type {
   LogbookStats,
   QuestionBankEntry,
   QuestionOption,
+  QuestionAssertion,
   QuestionReference,
   QuestionTag,
   QuestionTypeEnum,
@@ -846,6 +849,21 @@ export async function fetchQuestionOptions(questionId: string): Promise<Question
   return data ?? mockQuestionOptions[questionId] ?? [];
 }
 
+export async function fetchQuestionAssertions(questionId: string): Promise<QuestionAssertion[]> {
+  const supabase = await fetchClient();
+  if (!supabase) {
+    return mockQuestionAssertions[questionId] ?? [];
+  }
+
+  const { data } = await supabase
+    .from("question_assertions")
+    .select("*")
+    .eq("question_id", questionId)
+    .order("display_order", { ascending: true });
+
+  return data ?? mockQuestionAssertions[questionId] ?? [];
+}
+
 export async function fetchQuestionTags(questionId: string): Promise<QuestionTag[]> {
   const supabase = await fetchClient();
   if (!supabase) {
@@ -1354,6 +1372,121 @@ const mockQuestionBank: QuestionBankEntry[] = [
     active: true,
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString()
+  },
+  {
+    id: "question-sba-vf-1",
+    institution_id: null,
+    curriculum_year_id: mockYearByCode.ME2,
+    curriculum_topic_id: "topic-me2-obstetric",
+    curriculum_subtopic_id: "sub-me2-monitoring-1",
+    title: "Pré-eclâmpsia grave: julgue as assertivas",
+    stem: "Gestante com pré-eclâmpsia grave, edema agudo de pulmão prévio e indicação de cesárea urgente. Julgue as assertivas abaixo como verdadeiras ou falsas.",
+    rationale:
+      "Questões SBA nesse formato exigem avaliar cada assertiva de forma independente, integrando monitorização, estratégia anestésica e manejo farmacológico.",
+    difficulty: "hard",
+    question_type: "sba_true_false",
+    clinical_context_jsonb: { scenario: "Cesárea urgente em paciente obstétrica crítica" },
+    educational_goal: "Treinar julgamento assertiva por assertiva em obstetrícia crítica.",
+    status: "published",
+    source_generation_type: "human",
+    active: true,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  },
+  {
+    id: "question-pharm-1",
+    institution_id: null,
+    curriculum_year_id: mockYearByCode.ME1,
+    curriculum_topic_id: "topic-me1-pharm",
+    curriculum_subtopic_id: null,
+    title: "Escolha do agente de indução",
+    stem: "Em paciente séptico e hipotenso, qual agente venoso tende a preservar melhor a estabilidade hemodinâmica na indução?",
+    rationale: "Etomidato costuma ser a opção mais estável quando a preocupação principal é evitar colapso circulatório.",
+    difficulty: "medium",
+    question_type: "single_choice",
+    clinical_context_jsonb: { scenario: "Choque séptico com necessidade de indução" },
+    educational_goal: "Diferenciar agentes de indução conforme o risco hemodinâmico.",
+    status: "published",
+    source_generation_type: "human",
+    active: true,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  },
+  {
+    id: "question-monitoring-1",
+    institution_id: null,
+    curriculum_year_id: mockYearByCode.ME2,
+    curriculum_topic_id: "topic-me2-monitoring",
+    curriculum_subtopic_id: "sub-me2-monitoring-2",
+    title: "Curva arterial amortecida",
+    stem: "Durante monitorização invasiva, a curva arterial fica amortecida. Qual causa técnica deve ser excluída primeiro?",
+    rationale: "Bolhas, dobras e problemas no sistema pressurizado explicam muitas alterações artificiais do traçado.",
+    difficulty: "medium",
+    question_type: "single_choice",
+    clinical_context_jsonb: { scenario: "Linha arterial com perda de qualidade do traçado" },
+    educational_goal: "Reconhecer erro técnico antes de interpretar instabilidade hemodinâmica.",
+    status: "published",
+    source_generation_type: "human",
+    active: true,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  },
+  {
+    id: "question-cardiac-1",
+    institution_id: null,
+    curriculum_year_id: mockYearByCode.ME3,
+    curriculum_topic_id: "topic-me3-cardiac",
+    curriculum_subtopic_id: null,
+    title: "Vasoplegia pós-CEC",
+    stem: "Após saída da circulação extracorpórea, o paciente apresenta hipotensão, baixa resistência vascular sistêmica e débito preservado. Qual hipótese é mais provável?",
+    rationale: "O quadro é típico de vasoplegia pós-CEC, que exige reconhecimento e suporte vasopressor direcionado.",
+    difficulty: "hard",
+    question_type: "single_choice",
+    clinical_context_jsonb: { scenario: "Hipotensão vasodilatadora após circulação extracorpórea" },
+    educational_goal: "Reconhecer padrões hemodinâmicos críticos da cirurgia cardíaca.",
+    status: "published",
+    source_generation_type: "human",
+    active: true,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  },
+  {
+    id: "question-cardiac-vf-1",
+    institution_id: null,
+    curriculum_year_id: mockYearByCode.ME3,
+    curriculum_topic_id: "topic-me3-cardiac",
+    curriculum_subtopic_id: null,
+    title: "Saída da CEC: julgue as assertivas",
+    stem: "Paciente em fase de desmame da circulação extracorpórea. Julgue as assertivas abaixo como verdadeiras ou falsas.",
+    rationale: "O formato SBA em assertivas ajuda a revisar checkpoints críticos do desmame da CEC e da estabilidade hemodinâmica.",
+    difficulty: "hard",
+    question_type: "sba_true_false",
+    clinical_context_jsonb: { scenario: "Checklist de saída da circulação extracorpórea" },
+    educational_goal: "Fixar os marcos críticos do desmame da CEC.",
+    status: "published",
+    source_generation_type: "human",
+    active: true,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  },
+  {
+    id: "question-trauma-1",
+    institution_id: null,
+    curriculum_year_id: mockYearByCode.ME3,
+    curriculum_topic_id: "topic-me3-trauma",
+    curriculum_subtopic_id: null,
+    title: "Indução no trauma hemorrágico",
+    stem: "Paciente politraumatizado, hipotenso e com suspeita de sangramento ativo necessita indução anestésica. Qual objetivo hemodinâmico deve guiar a sequência inicial?",
+    rationale: "No trauma hemorrágico, a prioridade é evitar colapso circulatório adicional durante a indução e garantir perfusão mínima enquanto o controle de danos avança.",
+    difficulty: "hard",
+    question_type: "single_choice",
+    clinical_context_jsonb: { scenario: "Trauma hemorrágico com instabilidade hemodinâmica" },
+    educational_goal: "Priorizar estabilidade hemodinâmica na indução do trauma grave.",
+    status: "published",
+    source_generation_type: "human",
+    active: true,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
   }
 ];
 
@@ -1426,19 +1559,196 @@ const mockQuestionOptions: Record<string, QuestionOption[]> = {
       explanation: "A monitorização não invasiva pode ser insuficiente em pré-eclâmpsia grave.",
       display_order: 2
     }
+  ],
+  "question-pharm-1": [
+    {
+      id: "opt-pharm-1",
+      question_id: "question-pharm-1",
+      option_label: "A",
+      option_text: "Propofol",
+      is_correct: false,
+      explanation: "Pode agravar ainda mais a hipotensão nesse contexto.",
+      display_order: 1
+    },
+    {
+      id: "opt-pharm-2",
+      question_id: "question-pharm-1",
+      option_label: "B",
+      option_text: "Etomidato",
+      is_correct: true,
+      explanation: "Tende a preservar melhor a estabilidade hemodinâmica na indução de pacientes instáveis.",
+      display_order: 2
+    },
+    {
+      id: "opt-pharm-3",
+      question_id: "question-pharm-1",
+      option_label: "C",
+      option_text: "Tiopental",
+      is_correct: false,
+      explanation: "Não é a melhor escolha diante de instabilidade circulatória.",
+      display_order: 3
+    }
+  ],
+  "question-monitoring-1": [
+    {
+      id: "opt-monitoring-1",
+      question_id: "question-monitoring-1",
+      option_label: "A",
+      option_text: "Bolhas, dobras e problemas no sistema pressurizado",
+      is_correct: true,
+      explanation: "Essas causas técnicas devem ser excluídas antes de qualquer decisão clínica baseada no traçado.",
+      display_order: 1
+    },
+    {
+      id: "opt-monitoring-2",
+      question_id: "question-monitoring-1",
+      option_label: "B",
+      option_text: "Broncoespasmo como causa principal da curva amortecida",
+      is_correct: false,
+      explanation: "Pode alterar hemodinâmica, mas não explica primariamente a morfologia amortecida do traçado.",
+      display_order: 2
+    }
+  ],
+  "question-cardiac-1": [
+    {
+      id: "opt-cardiac-1",
+      question_id: "question-cardiac-1",
+      option_label: "A",
+      option_text: "Vasoplegia pós-circulação extracorpórea",
+      is_correct: true,
+      explanation: "É a hipótese mais coerente diante de hipotensão vasodilatadora com débito preservado.",
+      display_order: 1
+    },
+    {
+      id: "opt-cardiac-2",
+      question_id: "question-cardiac-1",
+      option_label: "B",
+      option_text: "Broncoespasmo isolado",
+      is_correct: false,
+      explanation: "Não explica adequadamente o padrão hemodinâmico descrito.",
+      display_order: 2
+    }
+  ],
+  "question-trauma-1": [
+    {
+      id: "opt-trauma-1",
+      question_id: "question-trauma-1",
+      option_label: "A",
+      option_text: "Preservar perfusão e evitar queda brusca da pressão durante a indução",
+      is_correct: true,
+      explanation: "Esse é o objetivo central da indução em trauma hemorrágico instável.",
+      display_order: 1
+    },
+    {
+      id: "opt-trauma-2",
+      question_id: "question-trauma-1",
+      option_label: "B",
+      option_text: "Buscar hipotensão profunda para facilitar a ventilação",
+      is_correct: false,
+      explanation: "Queda brusca de pressão agrava perfusão e piora prognóstico.",
+      display_order: 2
+    }
+  ]
+};
+
+const mockQuestionAssertions: Record<string, QuestionAssertion[]> = {
+  "question-sba-vf-1": [
+    {
+      id: "assertion-sba-1",
+      question_id: "question-sba-vf-1",
+      assertion_text: "A monitorização invasiva da pressão arterial deve ser considerada antes da indução ou do bloqueio, quando houver grande labilidade hemodinâmica esperada.",
+      is_true: true,
+      explanation: "Na pré-eclâmpsia grave com alta chance de instabilidade, a linha arterial facilita titulação vasoativa e resposta rápida.",
+      display_order: 1
+    },
+    {
+      id: "assertion-sba-2",
+      question_id: "question-sba-vf-1",
+      assertion_text: "A hipovolemia presumida deve ser corrigida com infusão liberal de cristaloides, independentemente de sinais clínicos ou ultrassonográficos.",
+      is_true: false,
+      explanation: "Estratégia liberal pode piorar edema pulmonar; reposição deve ser criteriosa e guiada pelo contexto clínico.",
+      display_order: 2
+    },
+    {
+      id: "assertion-sba-3",
+      question_id: "question-sba-vf-1",
+      assertion_text: "Se a anestesia neuroaxial for escolhida, vasopressores devem estar prontos e tituláveis para tratar hipotensão rapidamente.",
+      is_true: true,
+      explanation: "A prevenção e o tratamento precoce da hipotensão são parte central do manejo obstétrico seguro.",
+      display_order: 3
+    },
+    {
+      id: "assertion-sba-4",
+      question_id: "question-sba-vf-1",
+      assertion_text: "Sulfato de magnésio elimina a necessidade de vigilância respiratória pós-operatória, por reduzir risco convulsivo.",
+      is_true: false,
+      explanation: "Magnésio não elimina risco respiratório; exige vigilância de reflexos, ventilação e interação com bloqueadores neuromusculares.",
+      display_order: 4
+    },
+    {
+      id: "assertion-sba-5",
+      question_id: "question-sba-vf-1",
+      assertion_text: "A avaliação do risco de via aérea difícil continua mandatória, mesmo quando o plano inicial é anestesia regional.",
+      is_true: true,
+      explanation: "Cesárea urgente pode exigir conversão anestésica; a via aérea deve ser planejada desde o início.",
+      display_order: 5
+    }
+  ],
+  "question-cardiac-vf-1": [
+    {
+      id: "assertion-cardiac-1",
+      question_id: "question-cardiac-vf-1",
+      assertion_text: "Antes do desmame da CEC, temperatura, ritmo e ventilação devem ser explicitamente reavaliados.",
+      is_true: true,
+      explanation: "Esses itens fazem parte do checklist básico de saída da CEC.",
+      display_order: 1
+    },
+    {
+      id: "assertion-cardiac-2",
+      question_id: "question-cardiac-vf-1",
+      assertion_text: "Se a pressão estiver adequada por alguns segundos, não é necessário observar tendência hemodinâmica depois da retirada do suporte.",
+      is_true: false,
+      explanation: "A sustentação da estabilidade é tão importante quanto o valor momentâneo da pressão.",
+      display_order: 2
+    },
+    {
+      id: "assertion-cardiac-3",
+      question_id: "question-cardiac-vf-1",
+      assertion_text: "Suporte vasoativo deve estar preparado antes da retirada plena do suporte extracorpóreo.",
+      is_true: true,
+      explanation: "Antecipação evita atraso terapêutico em uma fase crítica da cirurgia cardíaca.",
+      display_order: 3
+    },
+    {
+      id: "assertion-cardiac-4",
+      question_id: "question-cardiac-vf-1",
+      assertion_text: "Problemas de ventilação podem comprometer o desmame e precisam ser corrigidos antes da transição completa.",
+      is_true: true,
+      explanation: "Oxigenação e ventilação inadequadas alteram a estabilidade durante a saída da CEC.",
+      display_order: 4
+    }
   ]
 };
 
 const mockQuestionTags: QuestionTag[] = [
   { id: "tag-airway", name: "Vias aéreas", tag_type: "topic" },
   { id: "tag-ethics", name: "Ética médica", tag_type: "topic" },
-  { id: "tag-obstetric", name: "Obstetrícia", tag_type: "topic" }
+  { id: "tag-obstetric", name: "Obstetrícia", tag_type: "topic" },
+  { id: "tag-monitoring", name: "Monitorização", tag_type: "topic" },
+  { id: "tag-cardiac", name: "Cirurgia cardíaca", tag_type: "topic" },
+  { id: "tag-trauma", name: "Trauma", tag_type: "topic" }
 ];
 
 const mockQuestionTagLinks: { id: string; question_id: string; tag_id: string }[] = [
   { id: "link-1", question_id: "question-ethics-1", tag_id: "tag-ethics" },
   { id: "link-2", question_id: "question-airway-1", tag_id: "tag-airway" },
-  { id: "link-3", question_id: "question-obstetric-1", tag_id: "tag-obstetric" }
+  { id: "link-3", question_id: "question-obstetric-1", tag_id: "tag-obstetric" },
+  { id: "link-4", question_id: "question-sba-vf-1", tag_id: "tag-obstetric" },
+  { id: "link-5", question_id: "question-pharm-1", tag_id: "tag-ethics" },
+  { id: "link-6", question_id: "question-monitoring-1", tag_id: "tag-monitoring" },
+  { id: "link-7", question_id: "question-cardiac-1", tag_id: "tag-cardiac" },
+  { id: "link-8", question_id: "question-cardiac-vf-1", tag_id: "tag-cardiac" },
+  { id: "link-9", question_id: "question-trauma-1", tag_id: "tag-trauma" }
 ];
 
 const mockQuestionReferences: Record<string, QuestionReference[]> = {
@@ -1474,6 +1784,72 @@ const mockQuestionReferences: Record<string, QuestionReference[]> = {
       page_or_section: "Capítulo 5",
       created_at: new Date().toISOString()
     }
+  ],
+  "question-sba-vf-1": [
+    {
+      id: "ref-sba-vf-1",
+      question_id: "question-sba-vf-1",
+      content_reference_id: null,
+      citation_label: "SBA Obstetrícia Crítica",
+      cited_excerpt: "O julgamento assertiva a assertiva exige integração entre hemodinâmica, neuroeixo e segurança materna.",
+      page_or_section: "Capítulo 8",
+      created_at: new Date().toISOString()
+    }
+  ],
+  "question-pharm-1": [
+    {
+      id: "ref-pharm-1",
+      question_id: "question-pharm-1",
+      content_reference_id: null,
+      citation_label: "SBA Farmacologia Anestésica",
+      cited_excerpt: "Etomidato é opção relevante quando a estabilidade hemodinâmica é prioritária.",
+      page_or_section: "Capítulo 7",
+      created_at: new Date().toISOString()
+    }
+  ],
+  "question-monitoring-1": [
+    {
+      id: "ref-monitoring-1",
+      question_id: "question-monitoring-1",
+      content_reference_id: null,
+      citation_label: "SBA Monitorização Invasiva",
+      cited_excerpt: "Falhas técnicas do sistema devem ser excluídas antes da interpretação clínica do traçado arterial.",
+      page_or_section: "Capítulo 11",
+      created_at: new Date().toISOString()
+    }
+  ],
+  "question-cardiac-1": [
+    {
+      id: "ref-cardiac-1",
+      question_id: "question-cardiac-1",
+      content_reference_id: null,
+      citation_label: "SBA Cirurgia Cardíaca",
+      cited_excerpt: "Vasoplegia pós-CEC é causa clássica de hipotensão vasodilatadora no pós circulação extracorpórea.",
+      page_or_section: "Capítulo 18",
+      created_at: new Date().toISOString()
+    }
+  ],
+  "question-cardiac-vf-1": [
+    {
+      id: "ref-cardiac-vf-1",
+      question_id: "question-cardiac-vf-1",
+      content_reference_id: null,
+      citation_label: "SBA Cirurgia Cardíaca",
+      cited_excerpt: "Desmame da CEC depende de checklist hemodinâmico, ventilatório e ritmo organizados.",
+      page_or_section: "Capítulo 19",
+      created_at: new Date().toISOString()
+    }
+  ],
+  "question-trauma-1": [
+    {
+      id: "ref-trauma-1",
+      question_id: "question-trauma-1",
+      content_reference_id: null,
+      citation_label: "SBA Trauma",
+      cited_excerpt: "A indução no trauma hemorrágico deve priorizar preservação hemodinâmica e perfusão mínima.",
+      page_or_section: "Capítulo 15",
+      created_at: new Date().toISOString()
+    }
   ]
 };
 
@@ -1503,50 +1879,108 @@ const mockErrorNotebook: TraineeErrorNotebookEntry[] = [
   }
 ];
 
-const mockFavorites = ["question-ethics-1", "question-obstetric-1"];
+const mockFavorites = ["question-ethics-1", "question-pharm-1"];
 
 const mockExams: Exam[] = [
   {
     id: "exam-trimestral-me1",
     institution_id: "institution-global",
     curriculum_year_id: "year-me1",
-    title: "Prova Trimestral ME1",
-    description: "Avalia temas de ética, vias aéreas e farmacologia no programa ME1.",
+    title: "Prova Trimestral SBA ME1",
+    description: "Avaliação formal com 50 questões cobrindo fundamentos, vias aéreas e farmacologia do primeiro ano.",
     exam_type: "quarterly",
     status: "open",
-    duration_minutes: 30,
-    total_questions: 3,
+    duration_minutes: 90,
+    total_questions: 50,
     passing_score: 70,
     available_from: new Date().toISOString(),
-    available_until: new Date(Date.now() + 1000 * 60 * 60 * 24).toISOString()
+    available_until: new Date(Date.now() + 1000 * 60 * 60 * 24).toISOString(),
+    refresh_cadence: "weekly",
+    refresh_scope: "global",
+    refresh_interval_days: 7,
+    refresh_on_completion: false,
+    last_refreshed_at: new Date().toISOString(),
+    next_refresh_at: new Date(Date.now() + 1000 * 60 * 60 * 24 * 7).toISOString()
   },
   {
     id: "exam-anual-me3",
     institution_id: "institution-global",
     curriculum_year_id: "year-me3",
     title: "Prova Anual ME3",
-    description: "Cobertura de trauma, cirurgia cardiovascular e neurocirurgia.",
+    description: "Prova anual estilo SBA com 100 questões sobre trauma, cardiovascular, neuro e crises complexas.",
     exam_type: "annual",
     status: "scheduled",
-    duration_minutes: 60,
-    total_questions: 5,
+    duration_minutes: 180,
+    total_questions: 100,
     passing_score: 75,
     available_from: new Date(Date.now() + 1000 * 60 * 60 * 24 * 14).toISOString(),
-    available_until: new Date(Date.now() + 1000 * 60 * 60 * 24 * 21).toISOString()
+    available_until: new Date(Date.now() + 1000 * 60 * 60 * 24 * 21).toISOString(),
+    refresh_cadence: "monthly",
+    refresh_scope: "global",
+    refresh_interval_days: 30,
+    refresh_on_completion: false,
+    last_refreshed_at: new Date().toISOString(),
+    next_refresh_at: new Date(Date.now() + 1000 * 60 * 60 * 24 * 30).toISOString()
   },
   {
-    id: "exam-simulado-cet",
+    id: "exam-training-me2-obstetric",
     institution_id: "institution-global",
     curriculum_year_id: "year-me2",
-    title: "Simulado FEBR",
-    description: "Prova simulada com questões representativas para revisão rápida.",
-    exam_type: "mock",
+    title: "Treino Rápido ME2 · Obstetrícia e Regional",
+    description: "Bloco curto de 10 questões para treino recorrente fora das provas formais.",
+    exam_type: "training_short",
     status: "open",
-    duration_minutes: 25,
-    total_questions: 3,
+    duration_minutes: 18,
+    total_questions: 10,
     passing_score: 65,
     available_from: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(),
-    available_until: new Date(Date.now() + 1000 * 60 * 60 * 24 * 7).toISOString()
+    available_until: new Date(Date.now() + 1000 * 60 * 60 * 24 * 7).toISOString(),
+    refresh_cadence: "on_completion",
+    refresh_scope: "per_user",
+    refresh_interval_days: null,
+    refresh_on_completion: true,
+    last_refreshed_at: new Date().toISOString(),
+    next_refresh_at: null
+  },
+  {
+    id: "exam-training-me1-fundamentos",
+    institution_id: "institution-global",
+    curriculum_year_id: "year-me1",
+    title: "Treino Rápido ME1 · Fundamentos",
+    description: "Bloco de 12 questões para prática frequente de princípios básicos do primeiro ano.",
+    exam_type: "training_short",
+    status: "open",
+    duration_minutes: 20,
+    total_questions: 12,
+    passing_score: 65,
+    available_from: new Date(Date.now() - 1000 * 60 * 60 * 4).toISOString(),
+    available_until: new Date(Date.now() + 1000 * 60 * 60 * 24 * 5).toISOString(),
+    refresh_cadence: "on_completion",
+    refresh_scope: "per_user",
+    refresh_interval_days: null,
+    refresh_on_completion: true,
+    last_refreshed_at: new Date().toISOString(),
+    next_refresh_at: null
+  },
+  {
+    id: "exam-training-me3-complex",
+    institution_id: "institution-global",
+    curriculum_year_id: "year-me3",
+    title: "Treino Rápido ME3 · Crises e Casos Complexos",
+    description: "Bloco de 15 questões para prática frequente de trauma, cirurgia cardíaca e crises complexas.",
+    exam_type: "training_short",
+    status: "open",
+    duration_minutes: 24,
+    total_questions: 15,
+    passing_score: 65,
+    available_from: new Date(Date.now() - 1000 * 60 * 60 * 3).toISOString(),
+    available_until: new Date(Date.now() + 1000 * 60 * 60 * 24 * 5).toISOString(),
+    refresh_cadence: "on_completion",
+    refresh_scope: "per_user",
+    refresh_interval_days: null,
+    refresh_on_completion: true,
+    last_refreshed_at: new Date().toISOString(),
+    next_refresh_at: null
   }
 ];
 
@@ -1556,43 +1990,113 @@ const mockExamBlueprints: Record<string, ExamBlueprint[]> = {
       id: "blueprint-1",
       exam_id: "exam-trimestral-me1",
       curriculum_topic_id: "topic-me1-ethics",
-      target_question_count: 1,
-      difficulty_distribution_jsonb: { easy: 1 },
-      weight_percent: 30
+      target_question_count: 10,
+      difficulty_distribution_jsonb: { easy: 4, medium: 4, hard: 2 },
+      weight_percent: 20
     },
     {
       id: "blueprint-2",
       exam_id: "exam-trimestral-me1",
       curriculum_topic_id: "topic-me1-airway",
-      target_question_count: 1,
-      difficulty_distribution_jsonb: { medium: 1 },
+      target_question_count: 20,
+      difficulty_distribution_jsonb: { easy: 4, medium: 10, hard: 6 },
       weight_percent: 40
     },
     {
       id: "blueprint-3",
       exam_id: "exam-trimestral-me1",
       curriculum_topic_id: "topic-me1-pharm",
-      target_question_count: 1,
-      difficulty_distribution_jsonb: { medium: 1 },
-      weight_percent: 30
+      target_question_count: 20,
+      difficulty_distribution_jsonb: { easy: 4, medium: 10, hard: 6 },
+      weight_percent: 40
     }
   ],
-  "exam-simulado-cet": [
+  "exam-anual-me3": [
+    {
+      id: "blueprint-annual-1",
+      exam_id: "exam-anual-me3",
+      curriculum_topic_id: "topic-me3-trauma",
+      target_question_count: 40,
+      difficulty_distribution_jsonb: { medium: 16, hard: 24 },
+      weight_percent: 40
+    },
+    {
+      id: "blueprint-annual-2",
+      exam_id: "exam-anual-me3",
+      curriculum_topic_id: "topic-me3-cardiac",
+      target_question_count: 32,
+      difficulty_distribution_jsonb: { medium: 12, hard: 20 },
+      weight_percent: 32
+    },
+    {
+      id: "blueprint-annual-3",
+      exam_id: "exam-anual-me3",
+      curriculum_topic_id: "topic-me3-plastic",
+      target_question_count: 28,
+      difficulty_distribution_jsonb: { medium: 10, hard: 18 },
+      weight_percent: 28
+    }
+  ],
+  "exam-training-me2-obstetric": [
     {
       id: "blueprint-4",
-      exam_id: "exam-simulado-cet",
+      exam_id: "exam-training-me2-obstetric",
       curriculum_topic_id: "topic-me2-monitoring",
-      target_question_count: 2,
-      difficulty_distribution_jsonb: { medium: 2 },
-      weight_percent: 50
+      target_question_count: 4,
+      difficulty_distribution_jsonb: { medium: 3, hard: 1 },
+      weight_percent: 40
     },
     {
       id: "blueprint-5",
-      exam_id: "exam-simulado-cet",
+      exam_id: "exam-training-me2-obstetric",
       curriculum_topic_id: "topic-me2-obstetric",
-      target_question_count: 1,
-      difficulty_distribution_jsonb: { hard: 1 },
-      weight_percent: 50
+      target_question_count: 6,
+      difficulty_distribution_jsonb: { medium: 4, hard: 2 },
+      weight_percent: 60
+    }
+  ],
+  "exam-training-me1-fundamentos": [
+    {
+      id: "blueprint-6",
+      exam_id: "exam-training-me1-fundamentos",
+      curriculum_topic_id: "topic-me1-ethics",
+      target_question_count: 3,
+      difficulty_distribution_jsonb: { easy: 2, medium: 1 },
+      weight_percent: 25
+    },
+    {
+      id: "blueprint-7",
+      exam_id: "exam-training-me1-fundamentos",
+      curriculum_topic_id: "topic-me1-airway",
+      target_question_count: 5,
+      difficulty_distribution_jsonb: { easy: 1, medium: 3, hard: 1 },
+      weight_percent: 40
+    },
+    {
+      id: "blueprint-8",
+      exam_id: "exam-training-me1-fundamentos",
+      curriculum_topic_id: "topic-me1-pharm",
+      target_question_count: 4,
+      difficulty_distribution_jsonb: { easy: 1, medium: 2, hard: 1 },
+      weight_percent: 35
+    }
+  ],
+  "exam-training-me3-complex": [
+    {
+      id: "blueprint-9",
+      exam_id: "exam-training-me3-complex",
+      curriculum_topic_id: "topic-me3-trauma",
+      target_question_count: 5,
+      difficulty_distribution_jsonb: { medium: 2, hard: 3 },
+      weight_percent: 35
+    },
+    {
+      id: "blueprint-10",
+      exam_id: "exam-training-me3-complex",
+      curriculum_topic_id: "topic-me3-cardiac",
+      target_question_count: 10,
+      difficulty_distribution_jsonb: { medium: 4, hard: 6 },
+      weight_percent: 65
     }
   ]
 };
@@ -1600,46 +2104,115 @@ const mockExamBlueprints: Record<string, ExamBlueprint[]> = {
 const mockExamQuestionLinks: Record<string, ExamQuestionLink[]> = {
   "exam-trimestral-me1": [
     {
-      id: "link-trim-1",
+      id: "link-sem-1",
       exam_id: "exam-trimestral-me1",
       question_id: "question-ethics-1",
       display_order: 1,
       points: 1
     },
     {
-      id: "link-trim-2",
+      id: "link-sem-2",
       exam_id: "exam-trimestral-me1",
       question_id: "question-airway-1",
       display_order: 2,
       points: 1
     },
     {
-      id: "link-trim-3",
+      id: "link-sem-3",
       exam_id: "exam-trimestral-me1",
+      question_id: "question-pharm-1",
+      display_order: 3,
+      points: 1
+    }
+  ],
+  "exam-anual-me3": [
+    {
+      id: "link-annual-1",
+      exam_id: "exam-anual-me3",
+      question_id: "question-cardiac-1",
+      display_order: 1,
+      points: 1
+    },
+    {
+      id: "link-annual-2",
+      exam_id: "exam-anual-me3",
+      question_id: "question-cardiac-vf-1",
+      display_order: 2,
+      points: 1
+    },
+    {
+      id: "link-annual-3",
+      exam_id: "exam-anual-me3",
+      question_id: "question-trauma-1",
+      display_order: 3,
+      points: 1
+    }
+  ],
+  "exam-training-me2-obstetric": [
+    {
+      id: "link-train-1",
+      exam_id: "exam-training-me2-obstetric",
+      question_id: "question-sba-vf-1",
+      display_order: 1,
+      points: 1
+    },
+    {
+      id: "link-train-2",
+      exam_id: "exam-training-me2-obstetric",
+      question_id: "question-monitoring-1",
+      display_order: 2,
+      points: 1
+    },
+    {
+      id: "link-train-3",
+      exam_id: "exam-training-me2-obstetric",
       question_id: "question-obstetric-1",
       display_order: 3,
       points: 1
     }
   ],
-  "exam-simulado-cet": [
+  "exam-training-me1-fundamentos": [
     {
-      id: "link-sim-1",
-      exam_id: "exam-simulado-cet",
-      question_id: "question-airway-1",
+      id: "link-train-me1-1",
+      exam_id: "exam-training-me1-fundamentos",
+      question_id: "question-ethics-1",
       display_order: 1,
       points: 1
     },
     {
-      id: "link-sim-2",
-      exam_id: "exam-simulado-cet",
-      question_id: "question-ethics-1",
+      id: "link-train-me1-2",
+      exam_id: "exam-training-me1-fundamentos",
+      question_id: "question-airway-1",
       display_order: 2,
       points: 1
     },
     {
-      id: "link-sim-3",
-      exam_id: "exam-simulado-cet",
-      question_id: "question-obstetric-1",
+      id: "link-train-me1-3",
+      exam_id: "exam-training-me1-fundamentos",
+      question_id: "question-pharm-1",
+      display_order: 3,
+      points: 1
+    }
+  ],
+  "exam-training-me3-complex": [
+    {
+      id: "link-train-me3-1",
+      exam_id: "exam-training-me3-complex",
+      question_id: "question-cardiac-1",
+      display_order: 1,
+      points: 1
+    },
+    {
+      id: "link-train-me3-2",
+      exam_id: "exam-training-me3-complex",
+      question_id: "question-cardiac-vf-1",
+      display_order: 2,
+      points: 1
+    },
+    {
+      id: "link-train-me3-3",
+      exam_id: "exam-training-me3-complex",
+      question_id: "question-trauma-1",
       display_order: 3,
       points: 1
     }
@@ -1682,8 +2255,8 @@ const mockExamAnswers: Record<string, ExamAnswer[]> = {
     {
       id: "answer-3",
       exam_attempt_id: "attempt-trimestral-1",
-      question_id: "question-obstetric-1",
-      selected_option_ids: ["opt-obstetric-1"],
+      question_id: "question-pharm-1",
+      selected_option_ids: ["opt-pharm-2"],
       is_correct: true,
       points_awarded: 1,
       answered_at: new Date().toISOString()
@@ -1773,6 +2346,14 @@ const mockSurgeryCatalog: SurgeryCatalog[] = [
     procedure_name: "Cesárea",
     procedure_group: "Obstetrícia",
     complexity_level: "intermediate",
+    active: true
+  },
+  {
+    id: "surgery-urology-turp",
+    specialty: "urology",
+    procedure_name: "Ressecção transuretral de próstata",
+    procedure_group: "Urologia",
+    complexity_level: "advanced",
     active: true
   }
 ];
@@ -2632,16 +3213,77 @@ export async function fetchPreanestheticTopicLinks(topicId: string): Promise<Pre
 }
 
 export async function fetchContentSources(): Promise<ContentSource[]> {
+  const librarySnapshot = await getContentLibrarySnapshot();
+  const localSources: ContentSource[] = librarySnapshot.sources.map((source) => ({
+    id: `local-${source.id}`,
+    title: source.title,
+    source_type: `local_${source.sourceType}`,
+    publisher: "content-library",
+    publication_year: null,
+    edition: null,
+    doi_or_identifier: source.filePath,
+    source_url: source.absolutePath,
+    citation_abnt: null,
+    citation_vancouver: null,
+    trust_level: source.priority,
+    active: source.fileExists,
+    created_at: librarySnapshot.index.lastUpdated,
+    updated_at: librarySnapshot.index.lastUpdated
+  }));
+
   const supabase = await fetchClient();
   if (!supabase) {
-    return mockContentSources;
+    return [...localSources, ...mockContentSources];
   }
 
   const { data } = await supabase.from("content_sources").select("*").order("title", { ascending: true });
-  return data ?? mockContentSources;
+  return [...localSources, ...(data ?? mockContentSources)];
 }
 
 export async function fetchContentSourceSections(sourceId: string): Promise<ContentSourceSection[]> {
+  if (sourceId.startsWith("local-")) {
+    const preview = await getContentLibraryExtractionPreviewById(sourceId.replace("local-", ""));
+    if (!preview) {
+      return [];
+    }
+
+    if (!preview.sections.length) {
+      return [
+        {
+          id: `${sourceId}-section-placeholder`,
+          content_source_id: sourceId,
+          section_label: "Prévia local",
+          section_title: "Prévia indisponível",
+          excerpt_text: preview.note ?? "Nenhum trecho local disponível para esta fonte.",
+          page_start: null,
+          page_end: null,
+          metadata_jsonb: {
+            extraction_status: preview.status,
+            extraction_method: preview.method,
+            file_path: preview.filePath
+          },
+          created_at: new Date().toISOString()
+        }
+      ];
+    }
+
+    return preview.sections.map((section, index) => ({
+      id: `${sourceId}-${section.id}`,
+      content_source_id: sourceId,
+      section_label: section.label,
+      section_title: section.title,
+      excerpt_text: section.excerpt,
+      page_start: index + 1,
+      page_end: index + 1,
+      metadata_jsonb: {
+        extraction_status: preview.status,
+        extraction_method: preview.method,
+        file_path: preview.filePath
+      },
+      created_at: new Date().toISOString()
+    }));
+  }
+
   const supabase = await fetchClient();
   if (!supabase) {
     return mockContentSourceSections.filter((section) => section.content_source_id === sourceId);
@@ -3083,19 +3725,19 @@ const mockSurgeryGuides: SurgeryAnesthesiaGuide[] = [
     educational_scope_notice:
       "Conteúdo educacional baseado em guidelines SBA. Veja o checklist e confirme protocolos institucionais antes de implementar qualquer conduta.",
     preop_considerations_markdown:
-      "Identifique sinais de peritonite, avaliações laboratoriais e otimize volemia. A admissão deve incluir analgesia multimodal e antibiótico profilático.",
+      "Identifique sinais de sepse abdominal, jejum inadequado, risco de broncoaspiração e distensão gástrica. Solicite hemograma, eletrólitos e função renal conforme contexto. Reponha volume antes da indução se houver sinais de hipovolemia e confirme antibiótico profilático com a equipe cirúrgica.",
     monitoring_markdown:
-      "Monitorização padrão com ECG, oximetria, capnografia e pressão não invasiva; considere monitorização invasiva se instabilidade.",
+      "Mínima obrigatória: ECG contínuo, pressão arterial não invasiva em intervalos curtos, oximetria de pulso, capnografia, temperatura e analisador de gases. Considere linha arterial, débito urinário e acesso venoso calibroso se houver sepse, peritonite extensa ou instabilidade hemodinâmica.",
     anesthetic_approach_markdown:
-      "Indução com propofol e fentanil, manutenção com sevoflurano e bloqueio paravertebral opcional para reduzir opioides.",
+      "Técnica principal: anestesia geral balanceada com sequência rápida se houver risco de aspiração. Indução com propofol 1,5-2,5 mg/kg, fentanil 1-2 mcg/kg e rocurônio 0,9-1,2 mg/kg ou succinilcolina 1-1,5 mg/kg em sequência rápida. Manutenção com sevoflurano ou desflurano, ventilação protetora e opioide de curta ação conforme estímulo cirúrgico. Bloqueio TAP bilateral é a alternativa regional mais útil para reduzir consumo de opioides.",
     medication_strategy_markdown:
-      "Administre antieméticos dupla via e mantenha analgesia multimodal com AINEs e paracetamol; reveja dosagens renais.",
+      "Pré-indução: cefazolina 2 g IV (ou conforme protocolo), dexametasona 4-8 mg IV para PONV se não contraindicado. Indução: propofol, opioide e bloqueador neuromuscular nas doses acima. Manutenção: sevoflurano 1-1,5 CAM, remifentanil 0,05-0,15 mcg/kg/min ou bolus titulados de fentanil. Resgate hemodinâmico com efedrina 5-10 mg ou fenilefrina 50-100 mcg. Analgesia basal com dipirona 1-2 g, paracetamol 1 g e AINE se permitido.",
     analgesia_plan_markdown:
-      "Bloqueio torácico paravertebral + ketorolaco + dipirona. Reserve opioide para dor moderada e registre doses.",
+      "Analgesia recomendada: dipirona 1-2 g IV, paracetamol 1 g IV/VO, cetorolaco 15-30 mg ou equivalente se não houver contraindicação. Considere TAP block com ropivacaína para reduzir dor somática abdominal. Adjuvantes úteis: dexametasona, ondansetrona 4 mg, hidratação orientada por metas e profilaxia de trombose venosa conforme risco do paciente e protocolo local.",
     postop_plan_markdown:
-      "Terapia multimodal no pós-operatório imediato, controle da náusea e mobilização precoce. Protocolos de alta segura em 24h.",
+      "No pós-operatório, monitorar dor, náusea, distensão abdominal, diurese e sinais de sepse residual. Manter analgesia multimodal, profilaxia de PONV e estratégia de alta segura conforme evolução clínica e aceitação de dieta.",
     risks_and_pitfalls_markdown:
-      "Dor refratária quando o bloqueio falha, laparoscopia prolongada, risco de hipoventilação pós-op.",
+      "Principais armadilhas: broncoaspiração em abdome agudo, hipotensão pós-indução em paciente séptico, ventilação inadequada com pneumoperitônio e analgesia insuficiente no despertar. Sempre deixar plano de via aérea difícil e resgate hemodinâmico prontos.",
     checklist_jsonb: {
       objectives: [
         "Promover analgesia confortável",
@@ -3129,19 +3771,19 @@ const mockSurgeryGuides: SurgeryAnesthesiaGuide[] = [
     educational_scope_notice:
       "Conteúdo educacional que apoia decisões anestésicas; confirme as condutas obstétricas locais e protocolos maternos antes das intervenções.",
     preop_considerations_markdown:
-      "Avalie pressão arterial, plaquetas e coagulação. Institua hidratação judiciosa e profiláxia de convulsões conforme protocolo.",
+      "Avalie PA, sintomas de gravidade, plaquetas, proteinúria, função hepática e sinais de edema pulmonar. Confirmar jejum, risco de aspiração, acesso venoso calibroso, disponibilidade de hemoderivados e plano para conversão anestésica se houver deterioração materna ou fetal.",
     monitoring_markdown:
-      "Monitorização invasiva arterial, capnografia e doppler fetal quando indicado; mantenha linha venosa segura.",
+      "Mínima obrigatória: ECG, PANI em ciclos curtos, oximetria, capnografia se sob anestesia geral, temperatura e vigilância contínua do padrão hemodinâmico. Em casos com maior labilidade pressórica ou necessidade de vasopressor contínuo, considerar cateter arterial. Garantir pelo menos um acesso venoso calibroso e disponibilidade de infusão pressórica.",
     anesthetic_approach_markdown:
-      "Raquianestesia com hiperbárica + fenilefrina titulada; considere cateter espinhal se sala com alto volume.",
+      "Técnica principal: raquianestesia com bupivacaína hiperbárica 10-12 mg + opioide intratecal conforme protocolo, associada a deslocamento uterino à esquerda e fenilefrina titulada ou em infusão precoce. Em risco elevado de falha ou maior duração, considerar técnica combinada ou cateter espinhal. Anestesia geral fica reservada para contraindicação ao neuroeixo, urgência extrema ou falha da técnica regional.",
     medication_strategy_markdown:
-      "Fenilefrina em bolsa de bomba, cefazolina profilática, e antieméticos múltiplos; opte por tranexâmico se hemorragia esperada.",
+      "Pré-incisão: cefazolina 2 g IV, antiácido particulado ou não particulado conforme protocolo e profilaxia antiemética. Vasopressor preferencial: fenilefrina em bolus de 50-100 mcg ou infusão titulada. Se hipotensão com bradicardia, considerar efedrina. Em risco de hemorragia, deixar ácido tranexâmico 1 g disponível e alinhar uterotônicos com obstetrícia.",
     analgesia_plan_markdown:
-      "Bloqueio TAP e parças de morfina intratecal; analgesia multimodal com AINEs e paracetamol após a drenagem uterina.",
+      "Analgesia de escolha: morfina intratecal em dose institucional, dipirona e paracetamol programados, AINE se não houver restrição e TAP block quando dor somática adicional for esperada. Profilaxias relevantes: antiemese, aspiração, hemorragia e trombose conforme risco obstétrico.",
     postop_plan_markdown:
-      "Vigilância da PA, cuidado com hipovolemia, revisão da perda sanguínea e plano de alta da UTI obstétrica.",
+      "Após o parto, manter vigilância rigorosa da PA, diurese, perda sanguínea, dor, náusea e sinais respiratórios. Reavaliar necessidade de magnésio, anti-hipertensivos e leito de maior complexidade conforme estabilidade materna.",
     risks_and_pitfalls_markdown:
-      "Hipotensão grave pós-raquianestesia, hemorragia obstétrica e aspiração pulmonar em população bariátrica.",
+      "Pontos críticos: hipotensão pós-raqui, falha de neuroeixo, hemorragia obstétrica, edema agudo de pulmão e necessidade de conversão rápida para anestesia geral. A equipe deve alinhar antecipadamente plano de hemorragia e via aérea difícil obstétrica.",
     checklist_jsonb: {
       objectives: [
         "Estabilizar hemodinâmica",
@@ -3164,6 +3806,52 @@ const mockSurgeryGuides: SurgeryAnesthesiaGuide[] = [
     status: "under_review",
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString()
+  },
+  {
+    id: "guide-surgery-urology-turp",
+    surgery_catalog_id: "surgery-urology-turp",
+    title: "Ressecção transuretral de próstata",
+    specialty: "urology",
+    summary:
+      "Guia para TURP com ênfase em técnica neuraxial, monitorização de volemia, prevenção da síndrome da RTU e analgesia adequada no idoso.",
+    educational_scope_notice:
+      "Use este material como roteiro clínico estruturado. Doses finais, escolha de técnica e profilaxias devem respeitar o protocolo institucional e o perfil do paciente.",
+    preop_considerations_markdown:
+      "Avaliar função renal, sódio basal, anticoagulação, história cardiovascular, fragilidade e sintomas urinários importantes. Planejar estratégia de fluidos e revisar risco de sangramento e de síndrome de absorção.",
+    monitoring_markdown:
+      "Monitorização mínima: ECG, PANI, oximetria, temperatura e observação clínica contínua de sinais neurológicos e volemia. Considerar linha arterial em pacientes cardiopatas, instáveis ou quando se espera ressecção longa com maior risco de sangramento ou absorção de fluido de irrigação.",
+    anesthetic_approach_markdown:
+      "Técnica preferida: raquianestesia com bupivacaína hiperbárica em bloqueio sensorial suficiente para o procedimento, permitindo reconhecimento precoce de sintomas de perfuração vesical, dor e síndrome da RTU. Anestesia geral é alternativa quando houver contraindicação ao neuroeixo, desconforto importante ou necessidade de controle ventilatório.",
+    medication_strategy_markdown:
+      "Sedação leve titulada, evitando mascarar alterações neurológicas. Vasopressores de resgate conforme necessidade. Antibioticoprofilaxia conforme urologia local. Em idosos frágeis, reduzir doses hipnóticas e opioides, com metas hemodinâmicas mais estritas.",
+    analgesia_plan_markdown:
+      "Dor costuma ser moderada; preferir dipirona, paracetamol e pequena dose de opioide apenas se necessário. Profilaxias importantes: antibioticoprofilaxia, prevenção de hipotermia, vigilância de sobrecarga hídrica e náusea conforme risco individual.",
+    postop_plan_markdown:
+      "Vigiar sangramento urinário, nível de consciência, sódio, estabilidade hemodinâmica, diurese e dor suprapúbica. Manter atenção para hiponatremia, agitação, confusão e sinais de retenção/coágulos.",
+    risks_and_pitfalls_markdown:
+      "Armadilhas principais: síndrome da RTU, sobrecarga volêmica, sangramento oculto, hipotermia e subtratamento da fragilidade do idoso. Se houver alteração neurológica ou hemodinâmica, interromper o procedimento e reavaliar imediatamente.",
+    checklist_jsonb: {
+      objectives: [
+        "Detectar precocemente síndrome da RTU",
+        "Preservar estabilidade hemodinâmica no paciente idoso",
+        "Conduzir analgesia e profilaxias com baixo custo fisiológico"
+      ],
+      alternatives: ["Anestesia geral balanceada em contraindicação ao neuroeixo", "Raqui com sedação mínima titulada"],
+      entries: [
+        { label: "Sódio e função renal revisados no pré-operatório" },
+        { label: "Plano de fluidos e monitorização definido" },
+        { label: "Antibioticoprofilaxia e vigilância de síndrome da RTU alinhadas" }
+      ],
+      metadata: {
+        contexts: ["elective", "inpatient"],
+        patient_types: ["adult"],
+        suggested_years: ["ME2", "ME3"],
+        confidence_level: "high"
+      }
+    },
+    status: "published",
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
   }
 ];
 
@@ -3183,6 +3871,14 @@ const mockSurgeryGuideVariants: SurgeryGuideVariant[] = [
     context_jsonb: { focus: "obstetric high-risk" },
     content_markdown:
       "Raquianestesia planejada com fenilefrina titulada e bloqueio TAP bilateral após entrega para analgesia prolongada."
+  },
+  {
+    id: "variant-turp-general",
+    guide_id: "guide-surgery-urology-turp",
+    variant_label: "Anestesia geral em cardiopatia complexa",
+    context_jsonb: { focus: "controle ventilatório e hemodinâmico rigoroso" },
+    content_markdown:
+      "Quando o neuroeixo não for opção, conduzir anestesia geral balanceada com monitorização hemodinâmica mais estreita, estratégia conservadora de fluidos e vigilância laboratorial seriada."
   }
 ];
 

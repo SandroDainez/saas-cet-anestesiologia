@@ -18,12 +18,21 @@ export function CohortProgressCard({
           {traineeCount} trainees · esperado {expectedPercent}%
         </p>
       </CardHeader>
-      <CardContent className="space-y-1 text-sm text-muted-foreground">
-        <p>Lições: {lessonProgressPercent}%</p>
-        <p>Módulos: {moduleProgressPercent}%</p>
-        <p>Maturidade clínica: {clinicalMaturityPercent}%</p>
-        <p>Atividade recente: {recentActivityCount} trainees</p>
+      <CardContent className="space-y-3 text-sm text-muted-foreground">
+        <ProgressRow label="Lições" value={`${lessonProgressPercent}%`} />
+        <ProgressRow label="Módulos" value={`${moduleProgressPercent}%`} />
+        <ProgressRow label="Maturidade clínica" value={`${clinicalMaturityPercent}%`} />
+        <ProgressRow label="Atividade recente" value={`${recentActivityCount} trainees`} />
       </CardContent>
     </Card>
+  );
+}
+
+function ProgressRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-center justify-between gap-3 rounded-2xl border border-border/60 bg-background/70 px-4 py-3">
+      <span>{label}</span>
+      <span className="font-semibold text-foreground">{value}</span>
+    </div>
   );
 }

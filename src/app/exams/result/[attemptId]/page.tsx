@@ -7,11 +7,30 @@ import { ExamDomainCard } from "@/components/exams/exam-domain-card";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getScopeFromRole } from "@/lib/auth/profile";
 import { requireModuleAccess } from "@/services/auth/require-module-access";
-import { fetchCurriculumTopicsByYear, fetchCurriculumYears, fetchExamAttemptById, fetchExamById, fetchExamResultDomains, fetchExamAnswers, fetchQuestionById, fetchQuestionOptions } from "@/services/db/modules";
+import {
+  fetchCurriculumTopicsByYear,
+  fetchCurriculumYears,
+  fetchExamAttemptById,
+  fetchExamAnswers,
+  fetchExamById,
+  fetchExamResultDomains,
+  fetchQuestionAssertions,
+  fetchQuestionById,
+  fetchQuestionOptions
+} from "@/services/db/modules";
 
 export const metadata = {
   title: "Resultado da prova"
 };
+
+function decodeAssertionSelections(selectedOptionIds: string[]) {
+  return Object.fromEntries(
+    selectedOptionIds
+      .map((value) => value.split(":"))
+      .filter((parts) => parts.length === 2)
+      .map(([assertionId, choice]) => [assertionId, choice === "V"])
+  ) as Record<string, boolean>;
+}
 
 interface ResultPageProps {
   params: Promise<{
@@ -57,7 +76,8 @@ export default async function ExamResultPage({ params }: ResultPageProps) {
     answers.map(async (answer) => {
       const question = await fetchQuestionById(answer.question_id, profile.institution_id);
       const options = await fetchQuestionOptions(answer.question_id);
-      return { answer, question, options };
+      const assertions = await fetchQuestionAssertions(answer.question_id);
+      return { answer, question, options, assertions };
     })
   );
 
@@ -152,7 +172,7 @@ export default async function ExamResultPage({ params }: ResultPageProps) {
             <p className="text-xs uppercase tracking-[0.4em] text-muted-foreground">Respostas e feedback</p>
           </div>
           <div className="space-y-4">
-            {argumentsList.map(({ question, answer, options }, index) => (
+            {argumentsList.map(({ question, answer, options, assertions }, index) => (
               <Card key={answer.id} className="space-y-3">
                 <CardHeader className="space-y-2">
                   <p className="text-xs uppercase tracking-[0.4em] text-muted-foreground">Questão {index + 1}</p>
@@ -161,36 +181,72 @@ export default async function ExamResultPage({ params }: ResultPageProps) {
                 </CardHeader>
                 <CardContent className="space-y-3">
                   <div className="space-y-2">
-                    <p className="text-xs uppercase tracking-[0.4em] text-muted-foreground">Alternativas</p>
-                    <div className="space-y-2">
-                      {options.map((option) => {
-                        const isSelected = answer.selected_option_ids.includes(option.id);
-                        const isCorrect = option.is_correct;
-                        return (
-                          <div
-                            key={option.id}
-                            className={`rounded-2xl border px-4 py-3 ${
-                              isCorrect
-                                ? "border-emerald-300 bg-emerald-50"
-                                : isSelected
-                                ? "border-rose-300 bg-rose-50"
-                                : "border-border/60 bg-background"
-                            }`}
-                          >
-                            <div className="flex items-center justify-between gap-3">
-                              <span className="text-xs font-semibold uppercase tracking-[0.4em] text-muted-foreground">
-                                {option.option_label ?? "Alternativa"}
-                              </span>
-                              <span className="text-[11px] font-semibold uppercase tracking-[0.4em]">
-                                {isCorrect ? "Correta" : isSelected ? "Selecionada" : " "}
-                              </span>
+                    <p className="text-xs uppercase tracking-[0.4em] text-muted-foreground">
+                      {question?.question_type === "sba_true_false" ? "Assertivas" : "Alternativas"}
+                    </p>
+                    {question?.question_type === "sba_true_false" ? (
+                      <div className="space-y-2">
+                        {assertions.map((assertion, assertionIndex) => {
+                          const selectedAssertions = decodeAssertionSelections(answer.selected_option_ids);
+                          const selectedValue = selectedAssertions[assertion.id];
+                          const isCorrectSelection = selectedValue === assertion.is_true;
+                          return (
+                            <div
+                              key={assertion.id}
+                              className={`rounded-2xl border px-4 py-3 ${
+                                isCorrectSelection
+                                  ? "border-emerald-300 bg-emerald-50"
+                                  : "border-rose-300 bg-rose-50"
+                              }`}
+                            >
+                              <div className="flex items-center justify-between gap-3">
+                                <span className="text-xs font-semibold uppercase tracking-[0.4em] text-muted-foreground">
+                                  Assertiva {assertionIndex + 1}
+                                </span>
+                                <span className="text-[11px] font-semibold uppercase tracking-[0.4em]">
+                                  Marcado: {selectedValue === undefined ? "—" : selectedValue ? "V" : "F"} · Gabarito:{" "}
+                                  {assertion.is_true ? "V" : "F"}
+                                </span>
+                              </div>
+                              <p className="text-sm text-muted-foreground">{assertion.assertion_text}</p>
+                              {assertion.explanation ? (
+                                <p className="text-xs text-muted-foreground">{assertion.explanation}</p>
+                              ) : null}
                             </div>
-                            <p className="text-sm text-muted-foreground">{option.option_text}</p>
-                            {option.explanation ? <p className="text-xs text-muted-foreground">{option.explanation}</p> : null}
-                          </div>
-                        );
-                      })}
-                    </div>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        {options.map((option) => {
+                          const isSelected = answer.selected_option_ids.includes(option.id);
+                          const isCorrect = option.is_correct;
+                          return (
+                            <div
+                              key={option.id}
+                              className={`rounded-2xl border px-4 py-3 ${
+                                isCorrect
+                                  ? "border-emerald-300 bg-emerald-50"
+                                  : isSelected
+                                  ? "border-rose-300 bg-rose-50"
+                                  : "border-border/60 bg-background"
+                              }`}
+                            >
+                              <div className="flex items-center justify-between gap-3">
+                                <span className="text-xs font-semibold uppercase tracking-[0.4em] text-muted-foreground">
+                                  {option.option_label ?? "Alternativa"}
+                                </span>
+                                <span className="text-[11px] font-semibold uppercase tracking-[0.4em]">
+                                  {isCorrect ? "Correta" : isSelected ? "Selecionada" : " "}
+                                </span>
+                              </div>
+                              <p className="text-sm text-muted-foreground">{option.option_text}</p>
+                              {option.explanation ? <p className="text-xs text-muted-foreground">{option.explanation}</p> : null}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
                   <div className="flex items-center gap-3">
                     <Link href={`/question-bank/question/${question?.id}`}>

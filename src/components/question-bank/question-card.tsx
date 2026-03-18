@@ -14,6 +14,7 @@ const questionTypeLabels: Record<QuestionTypeEnum, string> = {
   matching: "Relacionamento",
   multiple_choice: "Múltipla escolha",
   single_choice: "Escolha única",
+  sba_true_false: "SBA V ou F",
   true_false: "V ou F"
 };
 
@@ -25,6 +26,8 @@ interface QuestionCardProps {
 }
 
 export function QuestionCard({ question, yearCode, topicLabel, subtopicLabel }: QuestionCardProps) {
+  const scopeLabel = subtopicLabel ? `${topicLabel ? `${topicLabel} · ` : ""}${subtopicLabel}` : topicLabel ?? "Tópico geral";
+
   return (
     <Card className="space-y-3">
       <CardHeader className="space-y-2">
@@ -42,12 +45,13 @@ export function QuestionCard({ question, yearCode, topicLabel, subtopicLabel }: 
       <CardContent className="space-y-4">
         <div className="flex flex-wrap items-center gap-2">
           <DifficultyBadge difficulty={question.difficulty} />
-          <span className="text-xs font-medium uppercase tracking-[0.3em] text-muted-foreground">
-            {subtopicLabel ? `${topicLabel ? `${topicLabel} · ` : ""}${subtopicLabel}` : topicLabel ?? "Tópico geral"}
-          </span>
+          <span className="text-xs font-medium uppercase tracking-[0.3em] text-muted-foreground">{scopeLabel}</span>
+        </div>
+        <div className="rounded-2xl border border-border/60 bg-background/70 px-4 py-3 text-sm text-muted-foreground">
+          Escopo atual: <span className="font-semibold text-foreground">{scopeLabel}</span>
         </div>
         <Link href={`/question-bank/question/${question.id}`} className="inline-flex">
-          <Button variant="ghost" className={cn("w-full justify-center")} size="sm">
+          <Button variant="secondary" className={cn("w-full justify-center")} size="sm">
             Resolver questão
           </Button>
         </Link>

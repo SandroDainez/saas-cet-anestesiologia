@@ -12,6 +12,7 @@ import { TraineeSnapshotCard } from "@/components/reports/trainee-snapshot-card"
 import { ValidationAlertCard } from "@/components/reports/validation-alert-card";
 import { getScopeFromRole } from "@/lib/auth/profile";
 import { requireModuleAccess } from "@/services/auth/require-module-access";
+import { getCompetencyMatrix } from "@/services/curriculum/competency-matrix";
 import { fetchLongitudinalReportViewData } from "@/services/db/longitudinal-analytics";
 import type { ReportScope } from "@/types/database";
 
@@ -51,16 +52,29 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
     ? "preceptor"
     : "trainee";
   const data = await fetchLongitudinalReportViewData(scope);
+  const matrix = getCompetencyMatrix();
 
   return (
     <div className="min-h-screen bg-background">
       <main className="container space-y-8 py-10">
-        <section className="space-y-3">
-          <p className="text-xs uppercase tracking-[0.3em] text-muted-foreground">Analytics</p>
-          <h1 className="text-3xl font-semibold">Relatórios - visão {scopeLabels[scope]}</h1>
-          <p className="text-sm text-muted-foreground">
-            Dados vinculados a provas, trilhas, logbook, emergências, conteúdo e editorial.
-          </p>
+        <section className="rounded-[1.75rem] border border-border/70 bg-card/95 p-6 shadow-sm">
+          <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+            <div className="space-y-3">
+              <p className="text-xs uppercase tracking-[0.3em] text-muted-foreground">Analytics</p>
+              <h1 className="text-3xl font-semibold">Relatórios - visão {scopeLabels[scope]}</h1>
+              <p className="text-sm text-muted-foreground">
+                Dados vinculados a provas, trilhas, logbook, emergências, conteúdo e editorial.
+              </p>
+            </div>
+            <div className="rounded-[1.5rem] border border-border/70 bg-background/80 px-4 py-4 text-sm lg:max-w-sm">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-muted-foreground">Uso recomendado</p>
+              <div className="mt-3 space-y-3">
+                <ReportStep label="1. Ver visão geral" description="Leia panorama, risco e atividade antes de aprofundar." />
+                <ReportStep label="2. Abrir coortes" description="Compare anos para localizar atrasos e desequilíbrios." />
+                <ReportStep label="3. Agir no detalhe" description="Desça para trainee, alerta ou cobertura editorial." />
+              </div>
+            </div>
+          </div>
           <div className="flex flex-wrap gap-3">
             {(Object.keys(scopeLabels) as ReportScope[]).map((item) => (
               <a
@@ -76,6 +90,16 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
               </a>
             ))}
           </div>
+        </section>
+
+        <section className="grid gap-4 lg:grid-cols-3">
+          {matrix.map((yearBlock) => (
+            <div key={yearBlock.year} className="rounded-[1.5rem] border border-border/70 bg-card/90 p-5">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.35em] text-muted-foreground">{yearBlock.year}</p>
+              <h2 className="mt-2 text-lg font-semibold">{yearBlock.heading}</h2>
+              <p className="mt-2 text-sm text-muted-foreground">{yearBlock.focus}</p>
+            </div>
+          ))}
         </section>
 
         <AnalyticsSectionCard title="Visão geral">
@@ -163,6 +187,15 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
           </div>
         </AnalyticsSectionCard>
       </main>
+    </div>
+  );
+}
+
+function ReportStep({ label, description }: { label: string; description: string }) {
+  return (
+    <div className="rounded-2xl border border-border/60 bg-card/70 p-4">
+      <p className="text-sm font-semibold">{label}</p>
+      <p className="mt-2 text-sm text-muted-foreground">{description}</p>
     </div>
   );
 }

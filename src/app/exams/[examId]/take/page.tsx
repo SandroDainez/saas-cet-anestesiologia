@@ -3,7 +3,13 @@ import { notFound } from "next/navigation";
 import { ExamSession } from "@/components/exams/exam-session";
 import { CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { requireModuleAccess } from "@/services/auth/require-module-access";
-import { fetchExamById, fetchExamQuestionLinks, fetchQuestionById, fetchQuestionOptions } from "@/services/db/modules";
+import {
+  fetchExamById,
+  fetchExamQuestionLinks,
+  fetchQuestionAssertions,
+  fetchQuestionById,
+  fetchQuestionOptions
+} from "@/services/db/modules";
 
 export const metadata = {
   title: "Realizar prova"
@@ -29,6 +35,7 @@ export default async function ExamTakePage({ params }: ExamTakePageProps) {
     questionLinks.map(async (link) => {
       const detail = await fetchQuestionById(link.question_id, profile.institution_id);
       const options = await fetchQuestionOptions(link.question_id);
+      const assertions = await fetchQuestionAssertions(link.question_id);
       return {
         question:
           detail ?? {
@@ -50,7 +57,8 @@ export default async function ExamTakePage({ params }: ExamTakePageProps) {
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString()
           },
-        options
+        options,
+        assertions
       };
     })
   );
@@ -65,7 +73,8 @@ export default async function ExamTakePage({ params }: ExamTakePageProps) {
           </CardHeader>
           <CardContent className="space-y-3 p-0">
             <p className="text-sm text-muted-foreground">
-              Cronômetro de {exam.duration_minutes ?? 30} minutos e {questions.length} questões.
+              Cronômetro de {exam.duration_minutes ?? 30} minutos, {exam.total_questions ?? questions.length} questões no
+              plano da prova e {questions.length} questões já publicadas nesta versão.
             </p>
             <p className="text-xs text-muted-foreground">
               Resolva com calma, finalize a prova e acompanhe o resultado completo logo após o envio.

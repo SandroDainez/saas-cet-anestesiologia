@@ -6,8 +6,14 @@ import { DetailedContentView } from "@/components/preanesthetic/detailed-content
 import { DecisionTreeView } from "@/components/preanesthetic/decision-tree-view";
 import { TopicReferenceList } from "@/components/preanesthetic/topic-reference-list";
 import { EmergencyConfidenceCard } from "@/components/emergencies/emergency-confidence-card";
+import { EditorialSynthesisPanel } from "@/components/content-management/editorial-synthesis-panel";
 import { EditorialStatusBadge } from "@/components/content-management/editorial-status-badge";
+import { LocalSourceInlineCallout } from "@/components/content-management/local-source-inline-callout";
+import { LocalSourceExcerptPanel } from "@/components/content-management/local-source-excerpt-panel";
+import { LocalSourceList } from "@/components/content-management/local-source-list";
 import { requireModuleAccess } from "@/services/auth/require-module-access";
+import { getRecommendedLocalContext } from "@/services/content-library/library-context";
+import { buildEditorialSynthesis } from "@/services/content-library/editorial-synthesis";
 import { fetchContentReferences, fetchContentVersions, fetchPreanestheticTopicById } from "@/services/db/modules";
 import type { Metadata } from "next";
 
@@ -39,6 +45,16 @@ export default async function PreanestheticTopicPage({ params }: TopicPageProps)
 
   const versions = await fetchContentVersions("item-jejuns");
   const references = await fetchContentReferences(versions[0]?.id ?? "");
+  const localContext = await getRecommendedLocalContext({
+    usage: "theory",
+    preferredYears: profile.training_year ? [profile.training_year] : [],
+    keywords: [topic.title, topic.category, ...(topic.summary ? [topic.summary] : [])],
+    limit: 4
+  });
+  const synthesis = buildEditorialSynthesis({
+    primaryText: `${topic.summary ?? ""}\n${topic.detailed_content_markdown ?? ""}`,
+    localPreviews: localContext.previews
+  });
 
   return (
     <div className="min-h-screen bg-background">
@@ -59,11 +75,14 @@ export default async function PreanestheticTopicPage({ params }: TopicPageProps)
         <section className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
           <div className="space-y-4">
             <QuickReferencePanel quickReference={topic.quick_reference_jsonb} />
+            <LocalSourceInlineCallout title="Apoio local para este tópico" previews={localContext.previews} />
+            <EditorialSynthesisPanel title="Síntese clínica do tópico" synthesis={synthesis} />
             <DetailedContentView
               markdown={topic.detailed_content_markdown}
               references={references.map((reference) => reference.citation_label ?? reference.cited_excerpt ?? "Fonte não identificada")}
               status={topic.status}
               lastReviewed={topic.last_reviewed_at}
+              localHighlights={localContext.previews}
             />
             <DecisionTreeView decisionTree={topic.decision_tree_jsonb} />
           </div>
@@ -71,6 +90,16 @@ export default async function PreanestheticTopicPage({ params }: TopicPageProps)
           <div className="space-y-4">
             <TopicReferenceList
               references={references.map((reference) => reference.citation_label ?? reference.cited_excerpt ?? "Fonte sem título")}
+            />
+            <LocalSourceList
+              title="Biblioteca local relacionada"
+              description="Fontes complementares encontradas na content-library para este tópico."
+              sources={localContext.recommendedSources}
+            />
+            <LocalSourceExcerptPanel
+              title="Trechos locais recomendados"
+              description="Excertos disponíveis da biblioteca local para apoiar este tópico."
+              previews={localContext.previews}
             />
             <EmergencyConfidenceCard
               assessment={{

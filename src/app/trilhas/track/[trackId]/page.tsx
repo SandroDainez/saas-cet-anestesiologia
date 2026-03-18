@@ -56,32 +56,77 @@ export default async function TrackDetailPage({ params }: TrackDetailPageProps) 
       (lesson) =>
         !lessonProgress.some((progress) => progress.lesson_id === lesson.id && progress.status === "completed")
     ) ?? modulesWithLessons[0]?.lessons?.[0];
+  const completedLessons = lessonProgress.filter((progress) => progress.status === "completed").length;
+  const inProgressLessons = lessonProgress.filter((progress) => progress.status === "in_progress").length;
 
   return (
     <div className="min-h-screen bg-background">
       <main className="container space-y-6 py-10">
         <header className="space-y-4 rounded-[1.5rem] border border-border/70 bg-card/95 p-6">
-          <div className="space-y-2">
-            <Badge>Trilha</Badge>
-            <h1 className="text-3xl font-semibold">{track.title}</h1>
-            <p className="text-sm text-muted-foreground">{track.description}</p>
-          </div>
-          <div className="grid gap-4 sm:grid-cols-3">
-            <TrackMetric label="Módulos" value={modules.length} />
-            <TrackMetric label="Lições" value={allLessons.length} />
-            <TrackMetric
-              label="Progresso"
-              value={
-                moduleProgress.length > 0
-                  ? `${Math.round(
-                      moduleProgress.reduce((sum, item) => sum + Number(item.completion_percent ?? 0), 0) /
-                        moduleProgress.length
-                    )}%`
-                  : "0%"
-              }
-            />
+          <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+            <div className="space-y-3">
+              <Badge>Trilha</Badge>
+              <div className="space-y-2">
+                <h1 className="text-3xl font-semibold">{track.title}</h1>
+                <p className="max-w-2xl text-sm text-muted-foreground">{track.description}</p>
+              </div>
+              <div className="grid gap-4 sm:grid-cols-3">
+                <TrackMetric label="Módulos" value={modules.length} />
+                <TrackMetric label="Lições" value={allLessons.length} />
+                <TrackMetric
+                  label="Progresso"
+                  value={
+                    moduleProgress.length > 0
+                      ? `${Math.round(
+                          moduleProgress.reduce((sum, item) => sum + Number(item.completion_percent ?? 0), 0) /
+                            moduleProgress.length
+                        )}%`
+                      : "0%"
+                  }
+                />
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-2 lg:max-w-xs lg:justify-end">
+              {firstIncompleteLesson ? (
+                <Link href={`/trilhas/lesson/${firstIncompleteLesson.id}`}>
+                  <Button size="sm">Continuar trilha</Button>
+                </Link>
+              ) : null}
+              <Link href="/curriculum">
+                <Button variant="outline" size="sm">
+                  Ver currículo
+                </Button>
+              </Link>
+            </div>
           </div>
         </header>
+
+        <section className="grid gap-4 lg:grid-cols-[1.35fr_0.95fr]">
+          <Card className="border-border/70">
+            <CardHeader className="space-y-2">
+              <CardTitle className="text-lg">Como avançar nesta trilha</CardTitle>
+              <p className="text-sm text-muted-foreground">
+                A ideia é manter sequência lógica entre teoria, prática e progresso registrado.
+              </p>
+            </CardHeader>
+            <CardContent className="grid gap-3 sm:grid-cols-3">
+              <TrackStep label="1. Retomar lição" description="Abra a próxima lição pendente desta trilha." />
+              <TrackStep label="2. Consolidar módulo" description="Conclua o conjunto antes de migrar para outro tema." />
+              <TrackStep label="3. Praticar depois" description="Feche o estudo com questões e provas do mesmo ano." />
+            </CardContent>
+          </Card>
+          <Card className="border-border/70">
+            <CardHeader className="space-y-2">
+              <CardTitle className="text-lg">Status da trilha</CardTitle>
+              <p className="text-sm text-muted-foreground">Leitura rápida do andamento atual.</p>
+            </CardHeader>
+            <CardContent className="space-y-3 text-sm text-muted-foreground">
+              <TrackRow label="Concluídas" value={String(completedLessons)} />
+              <TrackRow label="Em andamento" value={String(inProgressLessons)} />
+              <TrackRow label="Próxima lição" value={firstIncompleteLesson?.title ?? "Nenhuma"} />
+            </CardContent>
+          </Card>
+        </section>
 
         {modules.length === 0 ? (
           <p className="rounded-[1.5rem] border border-border/70 bg-card/90 p-6 text-sm text-muted-foreground">
@@ -124,7 +169,7 @@ export default async function TrackDetailPage({ params }: TrackDetailPageProps) 
                                 : "Nova"}
                             </span>
                             <Link href={`/trilhas/lesson/${lesson.id}`}>
-                              <Button variant="outline" size="sm">
+                              <Button variant={status === "completed" ? "outline" : "secondary"} size="sm">
                                 Abrir
                               </Button>
                             </Link>
@@ -147,8 +192,8 @@ export default async function TrackDetailPage({ params }: TrackDetailPageProps) 
                 <h2 className="text-xl font-semibold">{firstIncompleteLesson.title}</h2>
               </div>
               <Link href={`/trilhas/lesson/${firstIncompleteLesson.id}`}>
-                <Button variant="ghost" size="sm">
-                  Abrir
+                <Button variant="secondary" size="sm">
+                  Retomar agora
                 </Button>
               </Link>
             </div>
@@ -167,6 +212,24 @@ function TrackMetric({ label, value }: { label: string; value: number | string }
     <div className="rounded-2xl border border-border/60 bg-background/70 px-4 py-3">
       <p className="text-[11px] font-semibold uppercase tracking-[0.35em] text-muted-foreground">{label}</p>
       <p className="mt-2 text-2xl font-semibold">{value}</p>
+    </div>
+  );
+}
+
+function TrackStep({ label, description }: { label: string; description: string }) {
+  return (
+    <div className="rounded-2xl border border-border/60 bg-background/70 p-4">
+      <p className="text-sm font-semibold">{label}</p>
+      <p className="mt-2 text-sm text-muted-foreground">{description}</p>
+    </div>
+  );
+}
+
+function TrackRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-center justify-between gap-3 rounded-2xl border border-border/60 bg-background/70 px-4 py-3">
+      <span>{label}</span>
+      <span className="font-semibold text-foreground">{value}</span>
     </div>
   );
 }

@@ -3,7 +3,12 @@ import { notFound } from "next/navigation";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { LocalSourceExcerptPanel } from "@/components/content-management/local-source-excerpt-panel";
+import { LocalSourceList } from "@/components/content-management/local-source-list";
 import { requireModuleAccess, isPrivilegedReviewerRole, isTraineeRole } from "@/services/auth/require-module-access";
+import { getRecommendedLocalContext } from "@/services/content-library/library-context";
+import { getCompetencyYearSummary } from "@/services/curriculum/competency-matrix";
+import { describeExamRefreshPolicy } from "@/services/exams/exam-refresh";
 import {
   fetchCurriculumTopicsByYear,
   fetchCurriculumYears,
@@ -16,6 +21,15 @@ import {
 
 export const metadata = {
   title: "Detalhes da prova"
+};
+
+const examTypeLabels: Record<string, string> = {
+  quarterly: "Prova trimestral",
+  annual: "Prova anual SBA",
+  training_short: "Treino rápido",
+  mock: "Simulado",
+  mini_test: "Mini teste",
+  oral_simulation: "Simulação oral"
 };
 
 interface ExamDetailPageProps {
@@ -37,6 +51,8 @@ export default async function ExamDetailPage({ params }: ExamDetailPageProps) {
 
   const years = await fetchCurriculumYears();
   const yearCode = years.find((year) => year.id === exam.curriculum_year_id)?.code;
+  const yearSummary = yearCode ? getCompetencyYearSummary(yearCode) : null;
+  const refreshPolicy = describeExamRefreshPolicy(exam);
   const topics = yearCode ? await fetchCurriculumTopicsByYear(yearCode) : [];
   const blueprint = await fetchExamBlueprints(exam.id);
   const questionLinks = await fetchExamQuestionLinks(exam.id);
@@ -45,13 +61,21 @@ export default async function ExamDetailPage({ params }: ExamDetailPageProps) {
   const questions = await Promise.all(
     questionLinks.map((link) => fetchQuestionById(link.question_id, profile.institution_id))
   );
+  const localContext = await getRecommendedLocalContext({
+    usage: "exams",
+    preferredYears: yearCode ? [yearCode] : [],
+    keywords: [exam.title, exam.description ?? "", ...topics.map((topic) => topic.title)],
+    limit: 4
+  });
 
   return (
     <div className="min-h-screen bg-background">
       <main className="container space-y-8 py-10">
         <section className="space-y-4 rounded-[1.5rem] border border-border/70 bg-card/95 p-6">
           <div className="flex flex-wrap items-center gap-2">
-            <Badge className="bg-secondary/10 text-secondary-foreground">{exam.exam_type}</Badge>
+            <Badge className="bg-secondary/10 text-secondary-foreground">
+              {examTypeLabels[exam.exam_type] ?? exam.exam_type}
+            </Badge>
             <span className="rounded-full border border-border px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.3em] text-muted-foreground">
               {yearCode ?? "Ano não definido"}
             </span>
@@ -62,10 +86,16 @@ export default async function ExamDetailPage({ params }: ExamDetailPageProps) {
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
             <DetailItem label="Duração" value={exam.duration_minutes ? `${exam.duration_minutes} min` : "Não definido"} />
-            <DetailItem label="Questões" value={`${questionLinks.length}`} />
+            <DetailItem
+              label="Questões planejadas"
+              value={exam.total_questions ? `${exam.total_questions}` : `${questionLinks.length}`}
+            />
+            <DetailItem label="Questões publicadas" value={`${questionLinks.length}`} />
             <DetailItem label="Status" value={exam.status} />
             <DetailItem label="Disponibilidade" value={`${formatDate(exam.available_from)} → ${formatDate(exam.available_until)}`} />
+            <DetailItem label="Atualização" value={refreshPolicy.label} />
           </div>
+          <p className="text-sm text-muted-foreground">{refreshPolicy.detail}</p>
           <div className="flex flex-wrap items-center gap-3">
             <Link href={`/exams/${exam.id}/take`}>
               <Button disabled={exam.status !== "open"}>{exam.status === "open" ? "Iniciar prova" : "Prova indisponível"}</Button>
@@ -75,6 +105,25 @@ export default async function ExamDetailPage({ params }: ExamDetailPageProps) {
                 <Button variant="outline">Último resultado</Button>
               </Link>
             ) : null}
+          </div>
+        </section>
+
+        <section className="grid gap-4 lg:grid-cols-[1.2fr_1fr]">
+          <div className="rounded-[1.5rem] border border-border/70 bg-card/90 p-5">
+            <p className="text-xs uppercase tracking-[0.4em] text-muted-foreground">Leitura recomendada</p>
+            <div className="mt-4 grid gap-3 sm:grid-cols-3">
+              <ExamStep label="1. Conferir blueprint" description="Valide quais domínios e tópicos estão cobrados." />
+              <ExamStep label="2. Executar prova" description="Faça a tentativa no contexto do seu ano e formato." />
+              <ExamStep label="3. Revisar resultado" description="Use o desempenho para voltar ao tema fraco." />
+            </div>
+          </div>
+          <div className="rounded-[1.5rem] border border-border/70 bg-card/90 p-5">
+            <p className="text-xs uppercase tracking-[0.4em] text-muted-foreground">Escopo acadêmico</p>
+            <div className="mt-4 space-y-3">
+              <DetailRow label="Ano" value={yearCode ?? "Não definido"} />
+              <DetailRow label="Domínios do ano" value={`${yearSummary?.coverageDomains.length ?? 0}`} />
+              <DetailRow label="Tentativas" value={`${attempts.length}`} />
+            </div>
           </div>
         </section>
 
@@ -154,6 +203,19 @@ export default async function ExamDetailPage({ params }: ExamDetailPageProps) {
             })}
           </div>
         </section>
+
+        <section className="grid gap-4 lg:grid-cols-2">
+          <LocalSourceList
+            title="Biblioteca local relacionada"
+            description="Fontes da content-library com uso sugerido para esta prova."
+            sources={localContext.recommendedSources}
+          />
+          <LocalSourceExcerptPanel
+            title="Trechos locais recomendados"
+            description="Excertos para revisar domínios e temas ligados à prova."
+            previews={localContext.previews}
+          />
+        </section>
       </main>
     </div>
   );
@@ -164,6 +226,24 @@ function DetailItem({ label, value }: { label: string; value: string }) {
     <div>
       <p className="text-xs font-semibold uppercase tracking-[0.3em] text-muted-foreground">{label}</p>
       <p className="text-sm font-medium">{value}</p>
+    </div>
+  );
+}
+
+function ExamStep({ label, description }: { label: string; description: string }) {
+  return (
+    <div className="rounded-2xl border border-border/60 bg-background/70 p-4">
+      <p className="text-sm font-semibold">{label}</p>
+      <p className="mt-2 text-sm text-muted-foreground">{description}</p>
+    </div>
+  );
+}
+
+function DetailRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-center justify-between gap-3 rounded-2xl border border-border/60 bg-background/70 px-4 py-3">
+      <span className="text-sm text-muted-foreground">{label}</span>
+      <span className="text-sm font-semibold text-foreground">{value}</span>
     </div>
   );
 }

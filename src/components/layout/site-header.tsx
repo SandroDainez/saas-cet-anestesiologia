@@ -16,18 +16,21 @@ export function SiteHeader() {
             <p className="text-xs text-muted-foreground">Base multi-institucional</p>
           </div>
         </Link>
-        <nav className="hidden flex-1 items-center justify-center gap-6 text-xs font-semibold uppercase tracking-[0.3em] text-muted-foreground sm:flex">
+        <nav className="hidden flex-1 items-center justify-center gap-5 text-xs font-semibold uppercase tracking-[0.26em] text-muted-foreground lg:flex">
           <Link href="/curriculum" className="text-muted-foreground transition hover:text-primary">
             Currículo SBA
           </Link>
           <Link href="/trilhas" className="text-muted-foreground transition hover:text-primary">
-            Trilhas de estudo
+            Trilhas
           </Link>
           <Link href="/question-bank" className="text-muted-foreground transition hover:text-primary">
-            Banco de questões
+            Questões
           </Link>
           <Link href="/exams" className="text-muted-foreground transition hover:text-primary">
             Provas
+          </Link>
+          <Link href="/curriculum/competencies" className="text-muted-foreground transition hover:text-primary">
+            Habilidades
           </Link>
           <Link href="/logbook" className="text-muted-foreground transition hover:text-primary">
             Logbook
@@ -35,8 +38,14 @@ export function SiteHeader() {
           <Link href="/emergencies" className="text-muted-foreground transition hover:text-primary">
             Emergências
           </Link>
+          <Link href="/emergencies/self-assessment" className="text-muted-foreground transition hover:text-primary">
+            Autoavaliação
+          </Link>
           <Link href="/preanesthetic" className="text-muted-foreground transition hover:text-primary">
             Pré-anestésico
+          </Link>
+          <Link href="/surgery-guides" className="text-muted-foreground transition hover:text-primary">
+            Guias cirúrgicos
           </Link>
         </nav>
         <div className="flex items-center gap-2">

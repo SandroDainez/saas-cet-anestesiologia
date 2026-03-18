@@ -1,9 +1,12 @@
 import { Metadata } from "next";
 
+import { LocalInsightPanel } from "@/components/content-management/local-insight-panel";
 import { Badge } from "@/components/ui/badge";
 import { SurgeryGuideCard } from "@/components/surgery-guides/surgery-guide-card";
 import { SurgeryGuideFilter } from "@/components/surgery-guides/surgery-guide-filter";
 import { requireModuleAccess } from "@/services/auth/require-module-access";
+import { getRecommendedLocalContext } from "@/services/content-library/library-context";
+import { buildLocalEditorialInsights } from "@/services/content-library/library-editorial-insights";
 import { fetchCurriculumYears, fetchSurgeryGuides } from "@/services/db/modules";
 import type {
   DifficultyLevel,
@@ -67,7 +70,7 @@ const firstValue = (value?: string | string[]) => {
 };
 
 export default async function SurgeryGuidesPage({ searchParams }: SurgeryGuidesPageProps) {
-  await requireModuleAccess("surgery-guides");
+  const profile = await requireModuleAccess("surgery-guides");
   const resolvedSearchParams = (await (searchParams ?? Promise.resolve({}))) as {
     specialty?: string | string[];
     complexity?: string | string[];
@@ -87,6 +90,21 @@ export default async function SurgeryGuidesPage({ searchParams }: SurgeryGuidesP
 
   const guides = await fetchSurgeryGuides(filters);
   const years = await fetchCurriculumYears();
+  const localContext = await getRecommendedLocalContext({
+    usage: "surgery-guides",
+    preferredYears: profile.training_year ? [profile.training_year] : [],
+    keywords: [
+      filters.specialty ?? "",
+      filters.query ?? "",
+      filters.context ?? "",
+      filters.patientType ?? "",
+      "tecnica",
+      "monitorizacao",
+      "profilaxia"
+    ],
+    limit: 4
+  });
+  const localInsights = buildLocalEditorialInsights(localContext.previews, 3);
   const yearOptions = years.map((year) => ({ value: year.code, label: year.name }));
 
   const specialtyOptions = Object.entries(specialtyLabels).map(([value, label]) => ({
@@ -120,6 +138,12 @@ export default async function SurgeryGuidesPage({ searchParams }: SurgeryGuidesP
             selected={filters}
           />
         </section>
+
+        <LocalInsightPanel
+          title="Destaques da biblioteca local"
+          description="Trechos úteis para apoiar a leitura dos guias por cirurgia."
+          insights={localInsights}
+        />
 
         <section className="space-y-4">
           {guides.length === 0 ? (

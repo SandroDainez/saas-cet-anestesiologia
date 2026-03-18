@@ -22,27 +22,65 @@ export default async function LogbookStatsPage() {
   return (
     <div className="min-h-screen bg-background">
       <main className="container space-y-8 py-10">
-        <header className="space-y-3">
-          <Badge>Admin</Badge>
-          <h1 className="text-3xl font-semibold">Estatísticas do logbook</h1>
-          <p className="text-sm text-muted-foreground">
-            Monitoramento de volume, complexidade e validações para cada instituição.
-          </p>
-          <div className="flex flex-wrap gap-3">
-            <Link href="/logbook">
-              <Button variant="outline" size="sm">
-                Voltar ao logbook
-              </Button>
-            </Link>
-            {profile.role === "preceptor" || profile.role === "institution_admin" || profile.role === "coordinator" ? (
-              <Link href="/logbook/validations">
-                <Button variant="ghost" size="sm">
-                  Ver validações
+        <header className="rounded-[1.5rem] border border-border/70 bg-card/95 p-6">
+          <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+            <div className="space-y-3">
+              <Badge>Logbook Analytics</Badge>
+              <div className="space-y-2">
+                <h1 className="text-3xl font-semibold">Estatísticas do logbook</h1>
+                <p className="max-w-2xl text-sm text-muted-foreground">
+                  Acompanhe volume, cobertura curricular, dificuldade percebida e pendências de validação.
+                </p>
+              </div>
+              <div className="grid gap-3 sm:grid-cols-3">
+                <SummaryPill label="Procedimentos" value={String(stats.totalProcedures)} />
+                <SummaryPill label="Pendentes" value={String(stats.pendingValidations)} />
+                <SummaryPill label="Perfil" value={profile.role.replaceAll("_", " ")} />
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-2 lg:max-w-xs lg:justify-end">
+              <Link href="/logbook">
+                <Button variant="outline" size="sm">
+                  Voltar ao logbook
                 </Button>
               </Link>
-            ) : null}
+              {profile.role === "preceptor" || profile.role === "institution_admin" || profile.role === "coordinator" ? (
+                <Link href="/logbook/validations">
+                  <Button variant="secondary" size="sm">
+                    Abrir validações
+                  </Button>
+                </Link>
+              ) : null}
+            </div>
           </div>
         </header>
+
+        <section className="grid gap-4 lg:grid-cols-[1.3fr_0.9fr]">
+          <div className="rounded-[1.5rem] border border-border/70 bg-card/90 p-5">
+            <p className="text-xs uppercase tracking-[0.4em] text-muted-foreground">Leitura rápida</p>
+            <div className="mt-4 grid gap-3 sm:grid-cols-3">
+              <InsightCard title="1. Volume" description="Confira se o trainee ou a instituição estão no ritmo esperado." />
+              <InsightCard title="2. Cobertura" description="Veja quais categorias e procedimentos seguem sub-representados." />
+              <InsightCard title="3. Ação" description="Priorize validações e redistribua prática quando houver atraso." />
+            </div>
+          </div>
+          {stats.expectedProgress ? (
+            <section className="rounded-[1.5rem] border border-border/70 bg-card/90 p-5">
+              <div className="flex items-center justify-between gap-4">
+                <div>
+                  <p className="text-xs uppercase tracking-[0.4em] text-muted-foreground">Esperado por ano</p>
+                  <h2 className="text-xl font-semibold">{stats.expectedProgress.label}</h2>
+                </div>
+                <div className="text-right">
+                  <p className="text-3xl font-semibold">{stats.expectedProgress.progressPercent}%</p>
+                  <p className="text-sm text-muted-foreground">
+                    {stats.expectedProgress.actualTotal}/{stats.expectedProgress.expectedTotal} casos registrados
+                  </p>
+                </div>
+              </div>
+            </section>
+          ) : null}
+        </section>
 
         <section className="grid gap-4 md:grid-cols-3">
           <LogbookStatsCard title="Procedimentos totais" value={stats.totalProcedures} description="Registrados no sistema" />
@@ -54,23 +92,6 @@ export default async function LogbookStatsPage() {
             accent={`${stats.frequentProcedures[0]?.count ?? 0} registros`}
           />
         </section>
-
-        {stats.expectedProgress ? (
-          <section className="rounded-[1.5rem] border border-border/70 bg-card/90 p-5">
-            <div className="flex items-center justify-between gap-4">
-              <div>
-                <p className="text-xs uppercase tracking-[0.4em] text-muted-foreground">Esperado por ano</p>
-                <h2 className="text-xl font-semibold">{stats.expectedProgress.label}</h2>
-              </div>
-              <div className="text-right">
-                <p className="text-3xl font-semibold">{stats.expectedProgress.progressPercent}%</p>
-                <p className="text-sm text-muted-foreground">
-                  {stats.expectedProgress.actualTotal}/{stats.expectedProgress.expectedTotal} casos registrados
-                </p>
-              </div>
-            </div>
-          </section>
-        ) : null}
 
         <section className="space-y-4">
           <div className="flex items-center justify-between">
@@ -144,6 +165,24 @@ export default async function LogbookStatsPage() {
           </div>
         </section>
       </main>
+    </div>
+  );
+}
+
+function SummaryPill({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-2xl border border-border/60 bg-background/70 px-4 py-3">
+      <p className="text-[11px] font-semibold uppercase tracking-[0.35em] text-muted-foreground">{label}</p>
+      <p className="mt-2 text-sm font-semibold">{value}</p>
+    </div>
+  );
+}
+
+function InsightCard({ title, description }: { title: string; description: string }) {
+  return (
+    <div className="rounded-2xl border border-border/60 bg-background/70 p-4">
+      <p className="text-sm font-semibold">{title}</p>
+      <p className="mt-2 text-sm text-muted-foreground">{description}</p>
     </div>
   );
 }

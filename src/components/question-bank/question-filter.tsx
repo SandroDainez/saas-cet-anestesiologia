@@ -33,6 +33,7 @@ const questionTypeOptions: QuestionTypeEnum[] = [
   "single_choice",
   "multiple_choice",
   "true_false",
+  "sba_true_false",
   "matching",
   "case_sequential",
   "image_based"
@@ -90,10 +91,13 @@ export function QuestionFilter({ years, topics, subtopics, currentFilters }: Que
   return (
     <section className="space-y-4 rounded-[1.5rem] border border-border/70 bg-card/90 p-6 shadow-sm">
       <div className="flex items-center justify-between gap-3">
-        <h2 className="text-lg font-semibold">Filtros</h2>
+        <div>
+          <h2 className="text-lg font-semibold">Filtros</h2>
+          <p className="mt-1 text-sm text-muted-foreground">Defina primeiro o ano e depois refine o tema.</p>
+        </div>
         <button
           type="button"
-          className="text-xs font-semibold uppercase tracking-[0.4em] text-primary"
+          className="text-xs font-semibold uppercase tracking-[0.35em] text-primary"
           onClick={() =>
             updateFilters({
               year: undefined,

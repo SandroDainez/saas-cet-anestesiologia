@@ -4,13 +4,17 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+import { describeExamRefreshPolicy } from "@/services/exams/exam-refresh";
 
 import type { Exam, TraineeYearCode } from "@/types/database";
 
 const typeLabels: Record<string, string> = {
   quarterly: "Prova trimestral",
   annual: "Prova anual",
-  mock: "Simulado"
+  training_short: "Treino rápido",
+  mock: "Simulado",
+  mini_test: "Mini teste",
+  oral_simulation: "Simulação oral"
 };
 
 const statusStyles: Record<string, string> = {
@@ -28,6 +32,8 @@ interface ExamCardProps {
 }
 
 export function ExamCard({ exam, href, yearCode }: ExamCardProps) {
+  const refreshPolicy = describeExamRefreshPolicy(exam);
+
   return (
     <Card className="space-y-4">
       <CardHeader className="space-y-3">
@@ -62,10 +68,21 @@ export function ExamCard({ exam, href, yearCode }: ExamCardProps) {
             <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-muted-foreground">Questões</p>
             <p className="text-sm">{exam.total_questions ?? "Não informado"}</p>
           </div>
+          <div className="sm:col-span-2">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-muted-foreground">Cadência</p>
+            <p className="text-sm">{refreshPolicy.detail}</p>
+          </div>
+        </div>
+        <div className="rounded-2xl border border-border/60 bg-background/70 px-4 py-3 text-sm text-muted-foreground">
+          {exam.exam_type === "quarterly"
+            ? "Use esta prova para fechar um ciclo trimestral do ano."
+            : exam.exam_type === "annual"
+            ? "Use esta prova para medir cobertura ampla e maturidade do ano."
+            : "Use este treino para revisão rápida e reposição individual de prática."}
         </div>
         <div className="flex items-center justify-between">
           <Link href={{ pathname: href }}>
-            <Button variant="outline" size="sm">
+            <Button variant="secondary" size="sm">
               Ver detalhes
             </Button>
           </Link>

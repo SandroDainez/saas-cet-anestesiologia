@@ -9,6 +9,7 @@ import {
   fetchLearningTracksByYear,
   fetchQuestionBankEntries
 } from "@/services/db/modules";
+import { getCompetencyYearSummary } from "@/services/curriculum/competency-matrix";
 
 export const metadata = {
   title: "Currículo SBA"
@@ -39,7 +40,8 @@ export default async function CurriculumPage() {
         topics,
         tracks,
         questions,
-        exams: exams.filter((exam) => exam.curriculum_year_id === year.id)
+        exams: exams.filter((exam) => exam.curriculum_year_id === year.id),
+        competencySummary: getCompetencyYearSummary(year.code)
       };
     })
   );
@@ -47,17 +49,29 @@ export default async function CurriculumPage() {
   return (
     <div className="min-h-screen bg-background">
       <main className="container space-y-8 py-10">
-        <header className="space-y-3">
-          <p className="text-xs uppercase tracking-[0.3em] text-muted-foreground">Currículo oficial SBA</p>
-          <h1 className="text-3xl font-semibold">Mapa curricular com estudo, prática e avaliação</h1>
-          <p className="max-w-3xl text-sm text-muted-foreground">
-            O currículo deixa de ser só lista de tópicos: cada ano agora aponta para trilhas, lições, banco de questões
-            e provas coerentes com a etapa de formação.
-          </p>
+        <header className="rounded-[1.75rem] border border-border/70 bg-card/95 p-6 shadow-sm">
+          <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+            <div className="space-y-3">
+              <p className="text-xs uppercase tracking-[0.3em] text-muted-foreground">Currículo oficial SBA</p>
+              <h1 className="text-3xl font-semibold">Mapa curricular com estudo, prática e avaliação</h1>
+              <p className="max-w-3xl text-sm text-muted-foreground">
+                Cada ano precisa ter escopo próprio. Aqui o foco é organizar o que pertence a `ME1`, `ME2` e `ME3`
+                sem misturar conteúdo, prova ou trilha fora da etapa correta.
+              </p>
+            </div>
+            <div className="rounded-[1.5rem] border border-border/70 bg-background/80 px-4 py-4 text-sm lg:max-w-sm">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-muted-foreground">Ordem sugerida</p>
+              <div className="mt-3 space-y-3">
+                <FlowHint title="1. Escolha o ano" description="Abra apenas o bloco curricular correspondente à etapa atual." />
+                <FlowHint title="2. Entre na trilha" description="Passe dos tópicos oficiais para módulos e lições organizadas." />
+                <FlowHint title="3. Feche com prática" description="Use questões, provas, logbook e emergências do mesmo ano." />
+              </div>
+            </div>
+          </div>
         </header>
 
         <section className="grid gap-6 lg:grid-cols-3">
-          {yearData.map(({ year, topics, tracks, questions, exams: yearExams }) => {
+          {yearData.map(({ year, topics, tracks, questions, exams: yearExams, competencySummary }) => {
             const yearHref = `/curriculum/${year.code.toLowerCase()}` as Parameters<typeof Link>[0]["href"];
 
             return (
@@ -74,6 +88,20 @@ export default async function CurriculumPage() {
                   <Metric label="Questões" value={questions.length} />
                   <Metric label="Provas" value={yearExams.length} />
                 </div>
+                {competencySummary ? (
+                  <div className="rounded-[1.5rem] border border-border/70 bg-card/90 p-4 text-sm">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.35em] text-muted-foreground">
+                      Cobertura obrigatória
+                    </p>
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {competencySummary.coverageDomains.map((domain) => (
+                        <span key={domain.id} className="rounded-full border border-border/70 px-3 py-1 text-xs text-muted-foreground">
+                          {domain.title}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                ) : null}
               </div>
             );
           })}
@@ -111,6 +139,33 @@ export default async function CurriculumPage() {
             action="Ir para prática"
           />
         </section>
+
+        <section className="grid gap-4 lg:grid-cols-4">
+          <StudyFlowCard
+            title="Logbook"
+            description="Registre procedimentos, acompanhe validações e maturidade clínica por ano."
+            href="/logbook"
+            action="Abrir logbook"
+          />
+          <StudyFlowCard
+            title="Autoavaliação"
+            description="Veja a evolução da confiança e da prontidão clínica em cenários de emergência."
+            href="/emergencies/self-assessment"
+            action="Abrir autoavaliação"
+          />
+          <StudyFlowCard
+            title="Habilidades"
+            description="Consulte a matriz de competências exigidas e as evidências esperadas em cada etapa."
+            href="/curriculum/competencies"
+            action="Ver competências"
+          />
+          <StudyFlowCard
+            title="Guias por cirurgia"
+            description="Acesse técnica recomendada, monitorização, drogas, profilaxias e riscos por procedimento."
+            href="/surgery-guides"
+            action="Abrir guias"
+          />
+        </section>
       </main>
     </div>
   );
@@ -121,6 +176,15 @@ function Metric({ label, value }: { label: string; value: number }) {
     <div className="rounded-2xl border border-border/60 bg-background/70 px-4 py-3">
       <p className="text-[11px] font-semibold uppercase tracking-[0.35em] text-muted-foreground">{label}</p>
       <p className="mt-2 text-2xl font-semibold">{value}</p>
+    </div>
+  );
+}
+
+function FlowHint({ title, description }: { title: string; description: string }) {
+  return (
+    <div className="rounded-2xl border border-border/60 bg-card/70 p-4">
+      <p className="text-sm font-semibold">{title}</p>
+      <p className="mt-2 text-sm text-muted-foreground">{description}</p>
     </div>
   );
 }

@@ -5,7 +5,7 @@ export interface AdminActivityItem {
   occurredAt: string;
   actorName: string;
   actorId: string;
-  category: "study" | "question" | "exam" | "logbook" | "validation" | "emergency";
+  category: "study" | "question" | "exam" | "logbook" | "validation" | "emergency" | "refresh";
   title: string;
   detail: string;
   tone: "neutral" | "positive" | "warning";
@@ -43,7 +43,8 @@ export async function fetchAdminActivityFeed(institutionId: string, limit = 24):
     questionAttemptsResult,
     examAttemptsResult,
     procedureLogsResult,
-    emergencyAttemptsResult
+    emergencyAttemptsResult,
+    refreshJobsResult
   ] = await Promise.all([
     supabase
       .from("trainee_lesson_progress")
@@ -74,6 +75,12 @@ export async function fetchAdminActivityFeed(institutionId: string, limit = 24):
       .select("id, trainee_user_id, scenario_id, completion_status, score_percent, completed_at, created_at")
       .in("trainee_user_id", institutionUserIds)
       .order("created_at", { ascending: false })
+      .limit(limit),
+    supabase
+      .from("user_content_refresh_jobs")
+      .select("id, trainee_user_id, trigger_reason, payload_jsonb, requested_at, completed_at")
+      .in("trainee_user_id", institutionUserIds)
+      .order("requested_at", { ascending: false })
       .limit(limit)
   ]);
 
@@ -82,6 +89,7 @@ export async function fetchAdminActivityFeed(institutionId: string, limit = 24):
   const examRows = examAttemptsResult.data ?? [];
   const procedureRows = procedureLogsResult.data ?? [];
   const emergencyRows = emergencyAttemptsResult.data ?? [];
+  const refreshRows = refreshJobsResult.data ?? [];
 
   const [lessonMapRows, questionMapRows, examMapRows, procedureMapRows, emergencyMapRows, validationRows] = await Promise.all([
     lessonRows.length
@@ -178,6 +186,34 @@ export async function fetchAdminActivityFeed(institutionId: string, limit = 24):
           : `Atualizou a tentativa para ${row.completion_status}.`,
       tone: row.completion_status === "completed" ? ("positive" as const) : ("neutral" as const)
     })),
+    ...refreshRows.map((row) => {
+      const payload = (row.payload_jsonb ?? {}) as Record<string, unknown>;
+      const examTitle =
+        typeof payload.exam_title === "string" && payload.exam_title.trim().length > 0
+          ? payload.exam_title
+          : "pacote de estudo";
+
+      return {
+        id: `refresh-${row.id}`,
+        occurredAt: row.completed_at ?? row.requested_at,
+        actorId: row.trainee_user_id,
+        actorName: actorNameById.get(row.trainee_user_id) ?? "Usuário",
+        category: "refresh" as const,
+        title:
+          row.trigger_reason === "training_exam_completed"
+            ? examTitle
+            : row.trigger_reason === "goal_completed"
+            ? "Meta de estudo concluída"
+            : "Refresh de conteúdo",
+        detail:
+          row.trigger_reason === "training_exam_completed"
+            ? "Concluiu um treino livre e disparou renovação individual imediata."
+            : row.trigger_reason === "goal_completed"
+            ? "Concluiu a meta e recebeu novo pacote interativo imediatamente."
+            : `Refresh registrado com motivo ${row.trigger_reason}.`,
+        tone: "positive" as const
+      };
+    }),
     ...(validationRows.data ?? []).flatMap((row) => {
       const procedure = procedureById.get(row.procedure_log_id);
       if (!procedure) {

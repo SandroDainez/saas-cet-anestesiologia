@@ -1,9 +1,12 @@
 import { Metadata } from "next";
 
+import { LocalInsightPanel } from "@/components/content-management/local-insight-panel";
 import { Badge } from "@/components/ui/badge";
 import { PreanestheticFilters } from "@/components/preanesthetic/preanesthetic-filters";
 import { PreanestheticTopicCard } from "@/components/preanesthetic/preanesthetic-topic-card";
 import { requireModuleAccess } from "@/services/auth/require-module-access";
+import { getRecommendedLocalContext } from "@/services/content-library/library-context";
+import { buildLocalEditorialInsights } from "@/services/content-library/library-editorial-insights";
 import { fetchPreanestheticTopics } from "@/services/db/modules";
 import type { PreanestheticCategory, PreanestheticTopic } from "@/types/database";
 
@@ -41,7 +44,7 @@ const getQueryParam = (value?: string | string[]) => {
 };
 
 export default async function PreanestheticPage({ searchParams }: PreanestheticPageProps) {
-  await requireModuleAccess("preanesthetic");
+  const profile = await requireModuleAccess("preanesthetic");
   const resolvedSearchParams = (await (searchParams ?? Promise.resolve({}))) as {
     category?: string | string[];
     q?: string | string[];
@@ -55,6 +58,20 @@ export default async function PreanestheticPage({ searchParams }: PreanestheticP
   }));
 
   const topics = await fetchPreanestheticTopics({ category, query });
+  const localContext = await getRecommendedLocalContext({
+    usage: "theory",
+    preferredYears: profile.training_year ? [profile.training_year] : [],
+    keywords: [
+      category ? categoryLabels[category] : "",
+      query ?? "",
+      "pré-anestésico",
+      "avaliacao",
+      "jejum",
+      "risco"
+    ],
+    limit: 4
+  });
+  const localInsights = buildLocalEditorialInsights(localContext.previews, 3);
 
   const referenceCounts = topics.map(() => 1);
 
@@ -72,6 +89,12 @@ export default async function PreanestheticPage({ searchParams }: PreanestheticP
         <section>
           <PreanestheticFilters categories={categories} selectedCategory={category} initialQuery={query} />
         </section>
+
+        <LocalInsightPanel
+          title="Destaques da biblioteca local"
+          description="Trechos da content-library que podem orientar a revisão deste módulo."
+          insights={localInsights}
+        />
 
         <section className="space-y-4">
           {topics.length === 0 ? (

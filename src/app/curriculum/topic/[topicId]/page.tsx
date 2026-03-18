@@ -9,6 +9,7 @@ import {
   fetchCurriculumSubtopics,
   fetchCurriculumTopicById,
   fetchCurriculumYears,
+  fetchExamSummaries,
   fetchLearningModulesForTrack,
   fetchLearningTracksByYear,
   fetchQuestionBankEntries
@@ -39,10 +40,11 @@ export default async function TopicDetailPage({ params }: TopicDetailPageProps) 
 
   const years = await fetchCurriculumYears();
   const yearCode = years.find((year) => year.id === topic.curriculum_year_id)?.code;
-  const [subtopics, questions, tracksByYear] = await Promise.all([
+  const [subtopics, questions, tracksByYear, exams] = await Promise.all([
     fetchCurriculumSubtopics(topic.id),
     fetchQuestionBankEntries({ topicId: topic.id }, profile.institution_id),
-    yearCode ? fetchLearningTracksByYear(yearCode, profile.institution_id) : Promise.resolve([])
+    yearCode ? fetchLearningTracksByYear(yearCode, profile.institution_id) : Promise.resolve([]),
+    fetchExamSummaries(profile.institution_id)
   ]);
   const relatedTracks = (
     await Promise.all(
@@ -52,21 +54,51 @@ export default async function TopicDetailPage({ params }: TopicDetailPageProps) 
       }))
     )
   ).filter(({ modules }) => modules.some((module) => module.curriculum_topic_id === topic.id));
+  const relatedExams = exams.filter((exam) => exam.curriculum_year_id === topic.curriculum_year_id);
 
   return (
     <div className="min-h-screen bg-background">
       <main className="container space-y-6 py-10">
-        <header className="space-y-2">
-          <Badge>Detalhe curricular</Badge>
-          <h1 className="text-3xl font-semibold">{topic.title}</h1>
-          <p className="text-sm text-muted-foreground">{topic.description}</p>
-        </header>
+        <header className="space-y-4">
+          <div className="space-y-2">
+            <Badge>Detalhe curricular</Badge>
+            <h1 className="text-3xl font-semibold">{topic.title}</h1>
+            <p className="max-w-3xl text-sm text-muted-foreground">{topic.description}</p>
+          </div>
 
-        <section className="grid gap-4 md:grid-cols-3">
-          <MiniMetric label="Subitens" value={subtopics.length} />
-          <MiniMetric label="Questões" value={questions.length} />
-          <MiniMetric label="Trilhas" value={relatedTracks.length} />
-        </section>
+          <section className="grid gap-4 lg:grid-cols-[1.15fr_0.85fr]">
+            <div className="rounded-[1.5rem] border border-border/70 bg-card/95 p-5">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.35em] text-muted-foreground">
+                Fluxo sugerido
+              </p>
+              <h2 className="mt-2 text-xl font-semibold">Ler, estudar e praticar no mesmo eixo temático</h2>
+              <p className="mt-2 text-sm text-muted-foreground">
+                Revise os subitens oficiais, abra a trilha relacionada e feche o ciclo com questões do mesmo tópico.
+              </p>
+              <div className="mt-4 flex flex-wrap gap-2">
+                {relatedTracks[0] ? (
+                  <Link href={`/trilhas/track/${relatedTracks[0].track.id}` as Parameters<typeof Link>[0]["href"]}>
+                    <Button size="sm">Abrir trilha principal</Button>
+                  </Link>
+                ) : null}
+                <Link href={{ pathname: "/question-bank", query: { topicId: topic.id } }}>
+                  <Button size="sm" variant="outline">Resolver questões</Button>
+                </Link>
+                {yearCode ? (
+                  <Link href={`/curriculum/${yearCode.toLowerCase()}` as Parameters<typeof Link>[0]["href"]}>
+                    <Button size="sm" variant="ghost">Voltar ao ano</Button>
+                  </Link>
+                ) : null}
+              </div>
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-1">
+              <MiniMetric label="Subitens" value={subtopics.length} />
+              <MiniMetric label="Questões" value={questions.length} />
+              <MiniMetric label="Trilhas" value={relatedTracks.length} />
+            </div>
+          </section>
+        </header>
 
         <section className="space-y-4">
           <h2 className="text-lg font-semibold">Subitens oficiais ({subtopics.length})</h2>
@@ -124,13 +156,19 @@ export default async function TopicDetailPage({ params }: TopicDetailPageProps) 
               <p className="mt-1 text-sm text-muted-foreground">
                 {yearCode ? `Alinhadas ao ano ${yearCode}.` : "Conteúdo transversal."}
               </p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                {relatedExams.length} provas do mesmo ano disponíveis para consolidar este bloco.
+              </p>
               <div className="mt-4 flex flex-wrap gap-3">
                 <Link href={{ pathname: "/question-bank", query: { topicId: topic.id } }}>
                   <Button size="sm">Resolver questões</Button>
                 </Link>
+                <Link href="/exams">
+                  <Button size="sm" variant="outline">Abrir provas do ano</Button>
+                </Link>
                 {yearCode ? (
                   <Link href={`/curriculum/${yearCode.toLowerCase()}` as Parameters<typeof Link>[0]["href"]}>
-                    <Button size="sm" variant="outline">
+                    <Button size="sm" variant="ghost">
                       Voltar ao ano
                     </Button>
                   </Link>

@@ -60,15 +60,48 @@ export default async function LessonPage({ params }: LessonPageProps) {
   return (
     <div className="min-h-screen bg-background">
       <main className="container space-y-6 py-10">
-        <header className="space-y-2">
-          <Badge>Lição interativa</Badge>
-          <h1 className="text-3xl font-semibold">{lesson.title}</h1>
-          <p className="text-sm text-muted-foreground">{lesson.objective ?? lesson.summary}</p>
-        </header>
+        <header className="space-y-4">
+          <div className="space-y-2">
+            <Badge>Lição interativa</Badge>
+            <h1 className="text-3xl font-semibold">{lesson.title}</h1>
+            <p className="max-w-3xl text-sm text-muted-foreground">{lesson.objective ?? lesson.summary}</p>
+          </div>
 
-        <section className="grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
-          <div className="space-y-4">
-            <div className="grid gap-4 sm:grid-cols-3">
+          <section className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
+            <div className="rounded-[1.5rem] border border-border/70 bg-card/95 p-5">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.35em] text-muted-foreground">
+                Sequência recomendada
+              </p>
+              <h2 className="mt-2 text-xl font-semibold">Concluir a lição e fechar com prática do mesmo tópico</h2>
+              <p className="mt-2 text-sm text-muted-foreground">
+                O fluxo ideal aqui é simples: terminar a lição, registrar progresso e treinar questões do tema antes da
+                próxima etapa.
+              </p>
+              <div className="mt-4 flex flex-wrap gap-2">
+                {isTraineeRole(profile.role) ? (
+                  <a href="#lesson-progress-panel">
+                    <Button size="sm">Concluir lição</Button>
+                  </a>
+                ) : null}
+                {learningModule.curriculum_topic_id ? (
+                  <Link href={{ pathname: "/question-bank", query: { topicId: learningModule.curriculum_topic_id } }}>
+                    <Button size="sm" variant={isTraineeRole(profile.role) ? "outline" : "default"}>Resolver questões</Button>
+                  </Link>
+                ) : null}
+                {nextLesson ? (
+                  <Link href={`/trilhas/lesson/${nextLesson.id}` as Parameters<typeof Link>[0]["href"]}>
+                    <Button size="sm" variant="ghost">Próxima lição</Button>
+                  </Link>
+                ) : null}
+                {track ? (
+                  <Link href={`/trilhas/track/${track.id}` as Parameters<typeof Link>[0]["href"]}>
+                    <Button size="sm" variant="ghost">Voltar à trilha</Button>
+                  </Link>
+                ) : null}
+              </div>
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-3">
               <LessonMetric label="Formato" value={lesson.lesson_format} />
               <LessonMetric label="Etapas" value={steps.length} />
               <LessonMetric
@@ -76,7 +109,11 @@ export default async function LessonPage({ params }: LessonPageProps) {
                 value={currentProgress?.status === "completed" ? "Concluída" : "Em estudo"}
               />
             </div>
+          </section>
+        </header>
 
+        <section className="grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
+          <div className="space-y-4">
             {steps.length === 0 ? (
               <p className="rounded-[1.5rem] border border-border/70 bg-card/90 p-6 text-sm text-muted-foreground">
                 Conteúdo adicional será inserido com base em fontes científicas aprovadas e revisão editorial.
@@ -92,14 +129,16 @@ export default async function LessonPage({ params }: LessonPageProps) {
 
           <div className="space-y-4">
             {isTraineeRole(profile.role) ? (
-              <LessonProgressPanel
-                lessonId={lesson.id}
-                moduleId={learningModule.id}
-                currentStatus={currentProgress?.status}
-                nextLessonHref={
-                  nextLesson ? (`/trilhas/lesson/${nextLesson.id}` as Parameters<typeof Link>[0]["href"]) : null
-                }
-              />
+              <div id="lesson-progress-panel">
+                <LessonProgressPanel
+                  lessonId={lesson.id}
+                  moduleId={learningModule.id}
+                  currentStatus={currentProgress?.status}
+                  nextLessonHref={
+                    nextLesson ? (`/trilhas/lesson/${nextLesson.id}` as Parameters<typeof Link>[0]["href"]) : null
+                  }
+                />
+              </div>
             ) : null}
 
             <div className="rounded-[1.5rem] border border-border/70 bg-card/90 p-5">

@@ -34,17 +34,26 @@ export function TraineeSnapshotCard({
         <CardTitle className="text-base">{traineeName}</CardTitle>
         <p className="text-xs text-muted-foreground">{trainingYear}</p>
       </CardHeader>
-      <CardContent className="space-y-1 text-sm text-muted-foreground">
-        <p>Lições: {lessonProgressPercent}%</p>
-        <p>Módulos: {moduleProgressPercent}%</p>
-        <p>Gap teórico: {formatGap(theoreticalGapPercent)}</p>
-        <p>Maturidade clínica: {clinicalMaturityPercent}%</p>
-        <p>Questões recentes: {formatOptionalPercent(recentQuestionAccuracy)}</p>
-        <p>Provas recentes: {formatOptionalPercent(recentExamAverage)}</p>
-        <p>Procedimentos/Emergências: {recentProcedures}/{recentEmergencies}</p>
-        <p>Validações pendentes: {pendingValidations}</p>
-        <p>Caderno de erros aberto: {openNotebookItems}</p>
+      <CardContent className="space-y-3 text-sm text-muted-foreground">
+        <SnapshotRow label="Lições" value={`${lessonProgressPercent}%`} />
+        <SnapshotRow label="Módulos" value={`${moduleProgressPercent}%`} />
+        <SnapshotRow label="Gap teórico" value={formatGap(theoreticalGapPercent)} />
+        <SnapshotRow label="Maturidade clínica" value={`${clinicalMaturityPercent}%`} />
+        <SnapshotRow label="Questões recentes" value={formatOptionalPercent(recentQuestionAccuracy)} />
+        <SnapshotRow label="Provas recentes" value={formatOptionalPercent(recentExamAverage)} />
+        <SnapshotRow label="Procedimentos/Emergências" value={`${recentProcedures}/${recentEmergencies}`} />
+        <SnapshotRow label="Validações pendentes" value={`${pendingValidations}`} />
+        <SnapshotRow label="Caderno de erros aberto" value={`${openNotebookItems}`} />
       </CardContent>
     </Card>
+  );
+}
+
+function SnapshotRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-center justify-between gap-3 rounded-2xl border border-border/60 bg-background/70 px-4 py-3">
+      <span>{label}</span>
+      <span className="font-semibold text-foreground">{value}</span>
+    </div>
   );
 }

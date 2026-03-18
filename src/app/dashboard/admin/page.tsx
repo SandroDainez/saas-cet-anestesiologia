@@ -1,9 +1,11 @@
+import { AdminActivityFeedCard } from "@/components/admin/admin-activity-feed-card";
 import { AdminWorkspace } from "@/features/admin/components/admin-workspace";
 import { AnalyticsSectionCard } from "@/components/reports/analytics-section-card";
 import { CohortProgressCard } from "@/components/reports/cohort-progress-card";
 import { MetricCard } from "@/components/reports/metric-card";
 import { TraineeSnapshotCard } from "@/components/reports/trainee-snapshot-card";
 import { ValidationAlertCard } from "@/components/reports/validation-alert-card";
+import { fetchAdminActivityFeed } from "@/services/admin/fetch-admin-activity-feed";
 import { isSupabaseAdminConfigured } from "@/lib/env";
 import { fetchInstitutionUsers } from "@/services/admin/fetch-institution-users";
 import { requireDashboardProfile } from "@/services/auth/require-dashboard-profile";
@@ -39,7 +41,10 @@ const adminSections = [
 
 export default async function AdminDashboardPage() {
   const profile = await requireDashboardProfile("admin");
-  const users = await fetchInstitutionUsers(profile.institution_id);
+  const [users, activityFeed] = await Promise.all([
+    fetchInstitutionUsers(profile.institution_id),
+    fetchAdminActivityFeed(profile.institution_id, 12)
+  ]);
   const data = await fetchLongitudinalReportViewData("admin");
   const stats = [
     {
@@ -71,6 +76,25 @@ export default async function AdminDashboardPage() {
       isAdminConfigured={isSupabaseAdminConfigured()}
       sections={adminSections}
     >
+      <div className="grid gap-4 lg:grid-cols-[1.25fr_0.95fr]">
+        <div className="rounded-[1.5rem] border border-border/70 bg-card/90 p-5">
+          <p className="text-xs uppercase tracking-[0.4em] text-muted-foreground">Prioridades do admin</p>
+          <div className="mt-4 grid gap-3 sm:grid-cols-3">
+            <AdminStep title="1. Cobertura" description="Verifique gaps de conteúdo por ano e domínio." />
+            <AdminStep title="2. Operação" description="Acompanhe atividade, refresh e validações pendentes." />
+            <AdminStep title="3. Intervenção" description="Corrija baixa atividade e risco longitudinal." />
+          </div>
+        </div>
+        <div className="rounded-[1.5rem] border border-border/70 bg-card/90 p-5">
+          <p className="text-xs uppercase tracking-[0.4em] text-muted-foreground">Leitura rápida</p>
+          <div className="mt-4 space-y-3">
+            <AdminRow label="Usuários" value={`${users.length}`} />
+            <AdminRow label="Eventos recentes" value={`${activityFeed.length}`} />
+            <AdminRow label="Snapshots em risco" value={`${data.traineeSnapshots.slice(0, 6).length}`} />
+          </div>
+        </div>
+      </div>
+
       <div id="analytics" className="grid gap-4 md:grid-cols-3">
         {data.overviewMetrics.map((metric) => (
           <MetricCard key={metric.label} label={metric.label} value={metric.value} helper={metric.helper} />
@@ -100,6 +124,28 @@ export default async function AdminDashboardPage() {
           ))}
         </div>
       </AnalyticsSectionCard>
+
+      <AnalyticsSectionCard title="Acompanhamento operacional">
+        <AdminActivityFeedCard items={activityFeed} />
+      </AnalyticsSectionCard>
     </AdminWorkspace>
+  );
+}
+
+function AdminStep({ title, description }: { title: string; description: string }) {
+  return (
+    <div className="rounded-2xl border border-border/60 bg-background/70 p-4">
+      <p className="text-sm font-semibold">{title}</p>
+      <p className="mt-2 text-sm text-muted-foreground">{description}</p>
+    </div>
+  );
+}
+
+function AdminRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-center justify-between gap-3 rounded-2xl border border-border/60 bg-background/70 px-4 py-3">
+      <span className="text-sm text-muted-foreground">{label}</span>
+      <span className="text-sm font-semibold text-foreground">{value}</span>
+    </div>
   );
 }

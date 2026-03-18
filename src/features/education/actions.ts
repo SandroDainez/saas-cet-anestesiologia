@@ -7,9 +7,27 @@ import { requireModuleAccess } from "@/services/auth/require-module-access";
 import {
   fetchExamById,
   fetchExamQuestionLinks,
+  fetchQuestionAssertions,
   fetchQuestionById,
   fetchQuestionOptions
 } from "@/services/db/modules";
+import { queueTrainingExamRefreshForUser } from "@/services/exams/exam-refresh";
+
+function encodeAssertionSelections(selectedAssertions: Record<string, boolean | null>) {
+  return Object.entries(selectedAssertions)
+    .filter(([, value]) => value !== null && value !== undefined)
+    .map(([assertionId, value]) => `${assertionId}:${value ? "V" : "F"}`);
+}
+
+function gradeAssertionSelections(
+  assertions: Awaited<ReturnType<typeof fetchQuestionAssertions>>,
+  selectedAssertions: Record<string, boolean | null>
+) {
+  const answeredAll = assertions.length > 0 && assertions.every((assertion) => selectedAssertions[assertion.id] !== null && selectedAssertions[assertion.id] !== undefined);
+  const isCorrect = answeredAll && assertions.every((assertion) => selectedAssertions[assertion.id] === assertion.is_true);
+
+  return { answeredAll, isCorrect };
+}
 
 async function getSupabaseOrThrow() {
   const supabase = await createServerClient();
@@ -101,19 +119,101 @@ export async function submitQuestionPracticeAction(_prevState: unknown, formData
   const profile = await requireModuleAccess("question-bank", { allowedScopes: ["trainee"] });
   const questionId = String(formData.get("question_id") ?? "");
   const selectedOptionId = String(formData.get("selected_option_id") ?? "");
+  const selectedAssertionsPayload = String(formData.get("selected_assertions_json") ?? "{}");
   const responseTimeSeconds = Number(formData.get("response_time_seconds") ?? 0) || null;
 
-  if (!questionId || !selectedOptionId) {
-    return { ok: false, message: "Selecione uma alternativa antes de enviar." };
-  }
-
-  const [question, options] = await Promise.all([
+  const [question, options, assertions] = await Promise.all([
     fetchQuestionById(questionId, profile.institution_id),
-    fetchQuestionOptions(questionId)
+    fetchQuestionOptions(questionId),
+    fetchQuestionAssertions(questionId)
   ]);
 
   if (!question) {
     return { ok: false, message: "Questão não encontrada." };
+  }
+
+  let selectedAssertions: Record<string, boolean | null> = {};
+  try {
+    selectedAssertions = JSON.parse(selectedAssertionsPayload) as Record<string, boolean | null>;
+  } catch {
+    selectedAssertions = {};
+  }
+
+  if (question.question_type === "sba_true_false") {
+    const { answeredAll, isCorrect } = gradeAssertionSelections(assertions, selectedAssertions);
+
+    if (!questionId || !answeredAll) {
+      return { ok: false, message: "Marque V ou F em todas as assertivas antes de enviar." };
+    }
+
+    const supabase = await getSupabaseOrThrow();
+
+    const { error: attemptError } = await supabase.from("trainee_question_attempts").insert({
+      trainee_user_id: profile.id,
+      question_id: questionId,
+      selected_option_ids: encodeAssertionSelections(selectedAssertions),
+      is_correct: isCorrect,
+      response_time_seconds: responseTimeSeconds,
+      mode: "practice"
+    });
+
+    if (attemptError) {
+      return { ok: false, message: attemptError.message };
+    }
+
+    if (!isCorrect) {
+      const now = new Date().toISOString();
+      const { data: existing } = await supabase
+        .from("trainee_error_notebook")
+        .select("*")
+        .eq("trainee_user_id", profile.id)
+        .eq("question_id", questionId)
+        .maybeSingle();
+
+      if (existing) {
+        await supabase
+          .from("trainee_error_notebook")
+          .update({
+            last_wrong_at: now,
+            times_wrong: (existing.times_wrong ?? 0) + 1,
+            resolved: false
+          })
+          .eq("id", existing.id);
+      } else {
+        await supabase.from("trainee_error_notebook").insert({
+          trainee_user_id: profile.id,
+          question_id: questionId,
+          first_wrong_at: now,
+          last_wrong_at: now,
+          times_wrong: 1,
+          resolved: false
+        });
+      }
+    } else {
+      await supabase
+        .from("trainee_error_notebook")
+        .update({ resolved: true })
+        .eq("trainee_user_id", profile.id)
+        .eq("question_id", questionId);
+    }
+
+    revalidatePath("/question-bank");
+    revalidatePath("/question-bank/errors");
+    revalidatePath(`/question-bank/question/${questionId}`);
+
+    return {
+      ok: true,
+      isCorrect,
+      selectedAssertions,
+      feedback: isCorrect
+        ? "Todas as assertivas foram julgadas corretamente."
+        : "Há pelo menos uma assertiva julgada incorretamente. Revise o comentário item a item.",
+      rationale: question.rationale ?? null
+    };
+  }
+
+  if (!questionId || !selectedOptionId) {
+    return { ok: false, message: "Selecione uma alternativa antes de enviar." };
   }
 
   const correctOptionIds = options.filter((option) => option.is_correct).map((option) => option.id);
@@ -193,16 +293,23 @@ export async function submitExamAttemptAction(_prevState: unknown, formData: For
   const profile = await requireModuleAccess("exam-take", { allowedScopes: ["trainee"] });
   const examId = String(formData.get("exam_id") ?? "");
   const answersPayload = String(formData.get("answers_json") ?? "{}");
+  const assertionAnswersPayload = String(formData.get("assertion_answers_json") ?? "{}");
 
   if (!examId) {
     return { ok: false, message: "Prova inválida." };
   }
 
   let answersByQuestion: Record<string, string> = {};
+  let assertionAnswersByQuestion: Record<string, Record<string, boolean | null>> = {};
   try {
     answersByQuestion = JSON.parse(answersPayload) as Record<string, string>;
   } catch {
     return { ok: false, message: "Respostas inválidas." };
+  }
+  try {
+    assertionAnswersByQuestion = JSON.parse(assertionAnswersPayload) as Record<string, Record<string, boolean | null>>;
+  } catch {
+    return { ok: false, message: "Respostas das assertivas inválidas." };
   }
 
   const exam = await fetchExamById(examId, profile.institution_id);
@@ -248,19 +355,26 @@ export async function submitExamAttemptAction(_prevState: unknown, formData: For
       fetchQuestionById(link.question_id, profile.institution_id),
       fetchQuestionOptions(link.question_id)
     ]);
+    const assertions = question?.question_type === "sba_true_false" ? await fetchQuestionAssertions(link.question_id) : [];
 
     const selectedOptionId = answersByQuestion[link.question_id];
+    const selectedAssertions = assertionAnswersByQuestion[link.question_id] ?? {};
     const correctOptionIds = options.filter((option) => option.is_correct).map((option) => option.id);
-    const isCorrect = Boolean(
-      selectedOptionId &&
-        correctOptionIds.length === 1 &&
-        correctOptionIds[0] === selectedOptionId
-    );
+    const assertionResult = question?.question_type === "sba_true_false" ? gradeAssertionSelections(assertions, selectedAssertions) : null;
+    const isCorrect =
+      question?.question_type === "sba_true_false"
+        ? Boolean(assertionResult?.isCorrect)
+        : Boolean(selectedOptionId && correctOptionIds.length === 1 && correctOptionIds[0] === selectedOptionId);
 
     answersToInsert.push({
       exam_attempt_id: attempt.id,
       question_id: link.question_id,
-      selected_option_ids: selectedOptionId ? [selectedOptionId] : [],
+      selected_option_ids:
+        question?.question_type === "sba_true_false"
+          ? encodeAssertionSelections(selectedAssertions)
+          : selectedOptionId
+          ? [selectedOptionId]
+          : [],
       is_correct: isCorrect,
       points_awarded: isCorrect ? Number(link.points ?? 1) : 0
     });
@@ -316,6 +430,16 @@ export async function submitExamAttemptAction(_prevState: unknown, formData: For
 
   if (updateError) {
     return { ok: false, message: updateError.message };
+  }
+
+  if (exam.exam_type === "training_short") {
+    await queueTrainingExamRefreshForUser({
+      institutionId: exam.institution_id,
+      traineeUserId: profile.id,
+      examId: exam.id,
+      examTitle: exam.title,
+      attemptId: attempt.id
+    });
   }
 
   revalidatePath("/exams");

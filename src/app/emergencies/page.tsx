@@ -1,10 +1,15 @@
 import Link from "next/link";
 
+import { LocalInsightPanel } from "@/components/content-management/local-insight-panel";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { EmergencyCoverageCard } from "@/components/emergencies/emergency-coverage-card";
 import { EmergencyScenarioCard } from "@/components/emergencies/emergency-scenario-card";
 import { getScopeFromRole } from "@/lib/auth/profile";
 import { requireModuleAccess } from "@/services/auth/require-module-access";
+import { getRecommendedLocalContext } from "@/services/content-library/library-context";
+import { buildLocalEditorialInsights } from "@/services/content-library/library-editorial-insights";
+import { getEmergencyCoverageByYear } from "@/services/emergencies/emergency-coverage";
 import { fetchEmergencyAttemptsByTrainee, fetchEmergencyScenarios, fetchEmergencySummary } from "@/services/db/modules";
 
 export const metadata = {
@@ -21,7 +26,15 @@ export default async function EmergenciesPage() {
       institutionId: profile.institution_id
     })
   ]);
+  const coverage = getEmergencyCoverageByYear(scope === "trainee" ? profile.training_year : undefined);
   const recentAttempts = scope === "trainee" ? await fetchEmergencyAttemptsByTrainee(profile.id, 5) : [];
+  const localContext = await getRecommendedLocalContext({
+    usage: "emergencies",
+    preferredYears: scope === "trainee" && profile.training_year ? [profile.training_year] : [],
+    keywords: ["emergencia", "crise", "via aerea", "hemodinamica", "anafilaxia", "last"],
+    limit: 4
+  });
+  const localInsights = buildLocalEditorialInsights(localContext.previews, 3);
 
   return (
     <div className="min-h-screen bg-background">
@@ -78,6 +91,24 @@ export default async function EmergenciesPage() {
             </div>
           </section>
         ) : null}
+
+        <LocalInsightPanel
+          title="Destaques da biblioteca local"
+          description="Trechos do acervo local para reforçar algoritmos e revisão de crise."
+          insights={localInsights}
+        />
+
+        <section className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-2xl font-semibold">Cobertura de complicações críticas</h2>
+            <span className="text-xs uppercase tracking-[0.4em] text-muted-foreground">Grade mínima obrigatória</span>
+          </div>
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            {coverage.map((item) => (
+              <EmergencyCoverageCard key={item.id} {...item} />
+            ))}
+          </div>
+        </section>
 
         <section className="space-y-4">
           <div className="flex items-center justify-between">

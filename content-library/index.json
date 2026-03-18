@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "lastUpdated": "2026-03-18",
+  "sources": [
+    {
+      "id": "example-book-general-anesthesia",
+      "title": "Exemplo de livro-base de anestesiologia",
+      "filePath": "books/example-book-general-anesthesia.pdf",
+      "sourceType": "book",
+      "usage": ["theory", "questions", "exams", "interactive-study"],
+      "applicability": ["ME1", "ME2", "ME3"],
+      "topics": ["farmacologia", "monitorizacao", "anestesia-geral"],
+      "priority": "high",
+      "notes": "Exemplo de fonte transversal. Substituir pelos materiais reais."
+    },
+    {
+      "id": "example-emergency-last-protocol",
+      "title": "Exemplo de protocolo de toxicidade sistêmica por anestésico local",
+      "filePath": "emergencies/example-last-protocol.pdf",
+      "sourceType": "protocol",
+      "usage": ["emergencies", "interactive-study", "questions"],
+      "applicability": ["ME2", "ME3"],
+      "topics": ["last", "anestesicos-locais", "crises-anestesicas"],
+      "priority": "high",
+      "notes": "Exemplo de protocolo focado em emergência."
+    }
+  ]
+}

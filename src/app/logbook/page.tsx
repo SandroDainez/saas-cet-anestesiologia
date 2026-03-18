@@ -43,25 +43,65 @@ export default async function LogbookPage() {
   return (
     <div className="min-h-screen bg-background">
       <main className="container space-y-8 py-10">
-        <header className="space-y-2">
-          <Badge>Logbook</Badge>
-          <h1 className="text-3xl font-semibold">Procedimentos registrados</h1>
-          <p className="text-sm text-muted-foreground">
-            Registre seus procedimentos, confira validações feitas pelos preceptores e acompanhe o progresso de cada caso.
-          </p>
-          <div className="flex flex-wrap gap-3">
-            <Link href="/logbook/new">
-              <Button>Novo registro</Button>
-            </Link>
-            <Link href="/logbook/stats">
-              <Button variant="ghost">Ver estatísticas</Button>
-            </Link>
-            {scope !== "trainee" ? (
-              <Link href="/logbook/validations">
-                <Button variant="outline">Validações pendentes</Button>
-              </Link>
-            ) : null}
+        <header className="space-y-4">
+          <div className="space-y-2">
+            <Badge>Logbook</Badge>
+            <h1 className="text-3xl font-semibold">Procedimentos registrados</h1>
+            <p className="max-w-3xl text-sm text-muted-foreground">
+              Registre procedimentos, acompanhe validações, compare o realizado com a meta do ano e revise sua
+              autoavaliação técnica.
+            </p>
           </div>
+
+          <section className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
+            <div className="rounded-[1.5rem] border border-border/70 bg-card/95 p-5">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.35em] text-muted-foreground">
+                Ação principal
+              </p>
+              <h2 className="mt-2 text-xl font-semibold">Registrar e revisar atividade clínica</h2>
+              <p className="mt-2 text-sm text-muted-foreground">
+                Use o logbook para documentar o caso, registrar autoavaliação e acompanhar o retorno do preceptor.
+              </p>
+              <div className="mt-4 flex flex-wrap gap-2">
+                <Link href="/logbook/new">
+                  <Button size="sm">Novo registro</Button>
+                </Link>
+                <Link href="/logbook/stats">
+                  <Button variant="outline" size="sm">Ver estatísticas</Button>
+                </Link>
+                <Link href="/logbook/validations">
+                  <Button variant="ghost" size="sm">Abrir validações</Button>
+                </Link>
+                {scope !== "trainee" ? (
+                  <span className="self-center text-xs text-muted-foreground">
+                    Revisão institucional habilitada para preceptoria.
+                  </span>
+                ) : null}
+              </div>
+            </div>
+
+            <div className="rounded-[1.5rem] border border-border/70 bg-card/90 p-5">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.35em] text-muted-foreground">
+                Leitura rápida
+              </p>
+              <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                <QuickStat label="Total registrado" value={`${stats.totalProcedures}`} />
+                <QuickStat label="Pendências" value={`${stats.pendingValidations}`} />
+                <QuickStat
+                  label="Mais frequente"
+                  value={stats.frequentProcedures[0]?.name ?? "Sem dados"}
+                />
+                <QuickStat
+                  label="Meta do ano"
+                  value={
+                    stats.expectedProgress
+                      ? `${stats.expectedProgress.actualTotal}/${stats.expectedProgress.expectedTotal}`
+                      : "—"
+                  }
+                />
+              </div>
+            </div>
+          </section>
         </header>
 
         <section className="grid gap-4 md:grid-cols-3">
@@ -103,8 +143,11 @@ export default async function LogbookPage() {
         ) : null}
 
         <section className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-2xl font-semibold">Últimos registros</h2>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h2 className="text-2xl font-semibold">Últimos registros</h2>
+              <p className="text-sm text-muted-foreground">Casos recentes, autoavaliação e status de validação.</p>
+            </div>
             <span className="text-xs uppercase tracking-[0.4em] text-muted-foreground">Traçar progresso</span>
           </div>
 
@@ -129,6 +172,15 @@ export default async function LogbookPage() {
           )}
         </section>
       </main>
+    </div>
+  );
+}
+
+function QuickStat({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-2xl border border-border/60 bg-background/70 px-4 py-3">
+      <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-muted-foreground">{label}</p>
+      <p className="mt-2 text-sm font-semibold text-foreground">{value}</p>
     </div>
   );
 }
