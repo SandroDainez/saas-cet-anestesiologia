@@ -1,32 +1,55 @@
 import { Badge } from "@/components/ui/badge";
-import { HighlightCard } from "@/features/dashboard/components/highlight-card";
-import { StatCard } from "@/features/dashboard/components/stat-card";
-import { getDashboardContent } from "@/features/dashboard/data/dashboard-content";
+import { AnalyticsSectionCard } from "@/components/reports/analytics-section-card";
+import { CohortProgressCard } from "@/components/reports/cohort-progress-card";
+import { MetricCard } from "@/components/reports/metric-card";
+import { TraineeSnapshotCard } from "@/components/reports/trainee-snapshot-card";
+import { ValidationAlertCard } from "@/components/reports/validation-alert-card";
 import { requireDashboardProfile } from "@/services/auth/require-dashboard-profile";
-import { fetchModuleCounts } from "@/services/db/modules";
+import { fetchLongitudinalReportViewData } from "@/services/db/longitudinal-analytics";
 
 export default async function PreceptorDashboardPage() {
-  const profile = await requireDashboardProfile("preceptor");
-  const moduleCounts = await fetchModuleCounts(profile.institution_id);
-  const content = getDashboardContent("preceptor", profile, moduleCounts ?? undefined);
+  await requireDashboardProfile("preceptor");
+  const data = await fetchLongitudinalReportViewData("preceptor");
 
   return (
     <section className="space-y-6">
       <div className="space-y-3">
         <Badge>Preceptor</Badge>
-        <h1 className="text-3xl font-semibold tracking-tight">{content.heading}</h1>
-        <p className="max-w-3xl text-sm leading-6 text-muted-foreground sm:text-base">{content.intro}</p>
+        <h1 className="text-3xl font-semibold tracking-tight">Supervisão longitudinal dos trainees</h1>
+        <p className="max-w-3xl text-sm leading-6 text-muted-foreground sm:text-base">
+          Visão por coorte e por trainee com progresso teórico, maturidade clínica, atividade recente e backlog de validações.
+        </p>
       </div>
+
       <div className="grid gap-4 md:grid-cols-3">
-        {content.stats.map((item) => (
-          <StatCard key={item.title} {...item} />
+        {data.overviewMetrics.map((metric) => (
+          <MetricCard key={metric.label} label={metric.label} value={metric.value} helper={metric.helper} />
         ))}
       </div>
-      <div className="grid gap-4 lg:grid-cols-3">
-        {content.highlights.map((item) => (
-          <HighlightCard key={item.title} {...item} />
-        ))}
-      </div>
+
+      <AnalyticsSectionCard title="Comparação institucional por ano">
+        <div className="grid gap-4 md:grid-cols-3">
+          {data.cohortProgress.map((summary) => (
+            <CohortProgressCard key={summary.year} {...summary} />
+          ))}
+        </div>
+      </AnalyticsSectionCard>
+
+      <AnalyticsSectionCard title="Trainees com acompanhamento ativo">
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          {data.traineeSnapshots.map((snapshot) => (
+            <TraineeSnapshotCard key={snapshot.traineeId} {...snapshot} />
+          ))}
+        </div>
+      </AnalyticsSectionCard>
+
+      <AnalyticsSectionCard title="Alertas prioritários">
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          {data.validationAlerts.map((alert) => (
+            <ValidationAlertCard key={`${alert.label}-${alert.detail}`} {...alert} />
+          ))}
+        </div>
+      </AnalyticsSectionCard>
     </section>
   );
 }

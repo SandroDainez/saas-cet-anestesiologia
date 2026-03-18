@@ -202,6 +202,52 @@ export interface TraineeModuleProgress {
   updated_at: string;
 }
 
+export type StudyGoalStatus = "active" | "completed" | "expired";
+export type StudyGoalItemType = "lesson" | "question_set" | "emergency";
+export type ContentRefreshReason = "scheduled_daily" | "goal_completed" | "manual_admin";
+export type ContentRefreshStatus = "queued" | "running" | "completed" | "failed";
+
+export interface StudyGoal {
+  id: string;
+  institution_id: string;
+  trainee_user_id: string;
+  goal_date: string;
+  refresh_sequence: number;
+  target_minutes: number;
+  status: StudyGoalStatus;
+  source_reason: ContentRefreshReason;
+  generated_at: string;
+  completed_at?: string | null;
+  updated_at: string;
+}
+
+export interface StudyGoalItem {
+  id: string;
+  study_goal_id: string;
+  item_type: StudyGoalItemType;
+  display_order: number;
+  estimated_minutes: number;
+  title: string;
+  lesson_id?: string | null;
+  emergency_scenario_id?: string | null;
+  question_ids: string[];
+  metadata_jsonb: Record<string, unknown>;
+  created_at: string;
+}
+
+export interface UserContentRefreshJob {
+  id: string;
+  institution_id: string;
+  trainee_user_id: string;
+  study_goal_id?: string | null;
+  trigger_reason: ContentRefreshReason;
+  status: ContentRefreshStatus;
+  payload_jsonb: Record<string, unknown>;
+  requested_at: string;
+  completed_at?: string | null;
+  error_message?: string | null;
+}
+
 export interface QuestionBankEntry {
   id: string;
   institution_id?: string | null;
@@ -734,6 +780,35 @@ export interface ReportViewData {
   emergencyPerformance: EmergencyPerformance[];
   editorialCoverage: EditorialCoverage;
   usageInsights: string[];
+  cohortProgress: CohortProgressSummary[];
+  traineeSnapshots: TraineeSnapshot[];
+}
+
+export interface CohortProgressSummary {
+  year: TraineeYearCode;
+  traineeCount: number;
+  expectedPercent: number;
+  lessonProgressPercent: number;
+  moduleProgressPercent: number;
+  clinicalMaturityPercent: number;
+  recentActivityCount: number;
+}
+
+export interface TraineeSnapshot {
+  traineeId: string;
+  traineeName: string;
+  trainingYear: TraineeYearCode;
+  expectedPercent: number;
+  lessonProgressPercent: number;
+  moduleProgressPercent: number;
+  theoreticalGapPercent: number;
+  clinicalMaturityPercent: number;
+  recentQuestionAccuracy: number | null;
+  recentExamAverage: number | null;
+  recentProcedures: number;
+  recentEmergencies: number;
+  pendingValidations: number;
+  openNotebookItems: number;
 }
 
 export interface ContentReference {

@@ -115,7 +115,7 @@ async function countTable(client: SupabaseClient, table: string, institutionId?:
   let builder = client.from(table).select("id", { count: "exact", head: true });
 
   if (typeof institutionId !== "undefined") {
-    builder = await applyTenantFilter(builder, institutionId);
+    builder = applyTenantFilter(builder, institutionId);
   }
 
   if (build) {
@@ -148,12 +148,12 @@ async function resolveInstitutionId(override?: string | null) {
   return sanitizeInstitutionId(profile?.institution_id);
 }
 
-async function applyTenantFilter(
+function applyTenantFilter(
   builder: any,
   institutionId?: string | null,
   options?: { includeGlobal?: boolean }
 ) {
-  const tenantId = await resolveInstitutionId(institutionId);
+  const tenantId = sanitizeInstitutionId(institutionId ?? undefined);
 
   if (tenantId) {
     if (options?.includeGlobal) {
@@ -264,7 +264,7 @@ export async function fetchLearningTracks(institutionId?: string): Promise<Learn
   }
 
   const builder = supabase.from("learning_tracks").select("*").order("title", { ascending: true });
-  const filtered = await applyTenantFilter(builder, institutionId, { includeGlobal: true });
+  const filtered = applyTenantFilter(builder, institutionId, { includeGlobal: true });
 
   const { data } = await filtered;
 
@@ -282,7 +282,7 @@ export async function fetchQuestionBankSamples(institutionId?: string, limit = 6
     .select("*")
     .order("created_at", { ascending: true })
     .limit(limit);
-  const filtered = await applyTenantFilter(builder, institutionId, { includeGlobal: true });
+  const filtered = applyTenantFilter(builder, institutionId, { includeGlobal: true });
 
   const { data } = await filtered;
   return data ?? [];
@@ -299,7 +299,7 @@ export async function fetchExamSummaries(institutionId?: string): Promise<Exam[]
     .select("*")
     .order("available_from", { ascending: false })
     .limit(8);
-  const filtered = await applyTenantFilter(builder, institutionId);
+  const filtered = applyTenantFilter(builder, institutionId);
 
   const { data } = await filtered;
   return data ?? [];
@@ -316,7 +316,7 @@ export async function fetchRecentProcedureLogs(institutionId?: string): Promise<
     .select("*")
     .order("performed_on", { ascending: false })
     .limit(6);
-  const filtered = await applyTenantFilter(builder, institutionId);
+  const filtered = applyTenantFilter(builder, institutionId);
 
   const { data } = await filtered;
   return data ?? [];
@@ -333,7 +333,7 @@ export async function fetchEmergencyScenarios(institutionId?: string): Promise<E
     .select("*")
     .order("created_at", { ascending: false })
     .limit(8);
-  const filtered = await applyTenantFilter(builder, institutionId, { includeGlobal: true });
+  const filtered = applyTenantFilter(builder, institutionId, { includeGlobal: true });
 
   const { data } = await filtered;
   return data ?? [];
@@ -349,7 +349,7 @@ export async function fetchEmergencyScenarioById(
   }
 
   const builder = supabase.from("emergency_scenarios").select("*").eq("id", scenarioId);
-  const filtered = await applyTenantFilter(builder, institutionId, { includeGlobal: true });
+  const filtered = applyTenantFilter(builder, institutionId, { includeGlobal: true });
   const { data } = await filtered.maybeSingle();
   return data ?? null;
 }
@@ -603,7 +603,7 @@ export async function fetchLearningTracksByYear(year: TraineeYearCode, instituti
     .select("*")
     .eq("curriculum_year_id", yearId)
     .order("display_order", { ascending: true });
-  const filtered = await applyTenantFilter(builder, institutionId, { includeGlobal: true });
+  const filtered = applyTenantFilter(builder, institutionId, { includeGlobal: true });
 
   const { data } = await filtered;
   return data ?? mockTracks[year] ?? [];
@@ -626,7 +626,7 @@ export async function fetchTrackById(trackId: string): Promise<LearningTrack | n
     .from("learning_tracks")
     .select("*")
     .eq("id", trackId);
-  const filtered = await applyTenantFilter(builder, undefined, { includeGlobal: true });
+  const filtered = applyTenantFilter(builder, await resolveInstitutionId(), { includeGlobal: true });
   const { data } = await filtered.maybeSingle();
 
   return data ?? null;
@@ -793,7 +793,7 @@ export async function fetchQuestionBankEntries(filters: QuestionFilters = {}, in
   if (filters.difficulty) builder = builder.eq("difficulty", filters.difficulty);
   if (filters.questionType) builder = builder.eq("question_type", filters.questionType);
 
-  builder = await applyTenantFilter(builder, institutionId, { includeGlobal: true });
+  builder = applyTenantFilter(builder, institutionId, { includeGlobal: true });
 
   const { data } = await builder;
   if (!data) {
@@ -810,7 +810,7 @@ export async function fetchQuestionById(questionId: string, institutionId?: stri
   }
 
   const builder = supabase.from("question_bank").select("*").eq("id", questionId);
-  const filtered = await applyTenantFilter(builder, institutionId, { includeGlobal: true });
+  const filtered = applyTenantFilter(builder, institutionId, { includeGlobal: true });
   const { data } = await filtered.maybeSingle();
   return data ?? null;
 }
@@ -925,7 +925,7 @@ export async function fetchFavoriteQuestions(favoriteIds?: string[], institution
   }
 
   const builder = supabase.from("question_bank").select("*").in("id", favoriteIds).order("created_at", { ascending: false });
-  const filtered = await applyTenantFilter(builder, institutionId, { includeGlobal: true });
+  const filtered = applyTenantFilter(builder, institutionId, { includeGlobal: true });
   const { data } = await filtered;
   return data ?? mockQuestionBank.filter((question) => favoriteIds.includes(question.id));
 }
@@ -2453,7 +2453,9 @@ const mockReportViews: Record<ReportScope, ReportViewData> = {
       { scenario: "Anafilaxia", completed: 1, successRate: 100, confidenceChange: 0 }
     ],
     editorialCoverage: { coveragePercent: 92, itemsPublished: 48, inReview: 5, criticalPending: 2 },
-    usageInsights: ["Conteúdos preanesthetic consultados 18 vezes", "Guias cirúrgicos referenciados para três cirurgias"]
+    usageInsights: ["Conteúdos preanesthetic consultados 18 vezes", "Guias cirúrgicos referenciados para três cirurgias"],
+    cohortProgress: [],
+    traineeSnapshots: []
   },
   preceptor: {
     overviewMetrics: [
@@ -2481,7 +2483,9 @@ const mockReportViews: Record<ReportScope, ReportViewData> = {
       { scenario: "Hipertermia maligna", completed: 1, successRate: 100, confidenceChange: 2 }
     ],
     editorialCoverage: { coveragePercent: 88, itemsPublished: 42, inReview: 7, criticalPending: 4 },
-    usageInsights: ["Preceptors sharing editorial insights for 8 guides", "Emergencies completed used for briefing"]
+    usageInsights: ["Preceptors sharing editorial insights for 8 guides", "Emergencies completed used for briefing"],
+    cohortProgress: [],
+    traineeSnapshots: []
   },
   admin: {
     overviewMetrics: [
@@ -2508,7 +2512,9 @@ const mockReportViews: Record<ReportScope, ReportViewData> = {
       { scenario: "Parada em centro cirúrgico", completed: 2, successRate: 85, confidenceChange: 1 }
     ],
     editorialCoverage: { coveragePercent: 82, itemsPublished: 57, inReview: 11, criticalPending: 4 },
-    usageInsights: ["IA jobs geraram 6 versões de conteúdos críticos", "Cobertura editorial rastreia 120 referências"]
+    usageInsights: ["IA jobs geraram 6 versões de conteúdos críticos", "Cobertura editorial rastreia 120 referências"],
+    cohortProgress: [],
+    traineeSnapshots: []
   }
 };
 
@@ -2652,7 +2658,7 @@ export async function fetchContentItems(): Promise<ContentItem[]> {
   }
 
   const builder = supabase.from("content_items").select("*").order("title", { ascending: true });
-  const filtered = await applyTenantFilter(builder);
+  const filtered = applyTenantFilter(builder, await resolveInstitutionId());
   const { data } = await filtered;
   return data ?? mockContentItems;
 }
@@ -2694,7 +2700,7 @@ export async function fetchAIGenerationJobs(): Promise<AIGenerationJob[]> {
   }
 
   const builder = supabase.from("ai_generation_jobs").select("*").order("created_at", { ascending: false });
-  const filtered = await applyTenantFilter(builder);
+  const filtered = applyTenantFilter(builder, await resolveInstitutionId());
   const { data } = await filtered;
   return data ?? mockAIGenerationJobs;
 }
@@ -3208,7 +3214,7 @@ export async function fetchInstitutionUnits(institutionId?: string): Promise<Ins
   }
 
   const builder = supabase.from("institution_units").select("*").order("name", { ascending: true });
-  const filtered = await applyTenantFilter(builder, institutionId);
+  const filtered = applyTenantFilter(builder, institutionId);
   const { data } = await filtered;
   return data ?? mockInstitutionUnits;
 }
@@ -3281,7 +3287,7 @@ export async function fetchProcedureLogs(traineeId?: string, institutionId?: str
     builder = builder.eq("trainee_user_id", traineeId);
   }
 
-  builder = await applyTenantFilter(builder, institutionId);
+  builder = applyTenantFilter(builder, institutionId);
 
   const { data } = await builder;
   return data ?? mockProcedureLogs;
@@ -3306,7 +3312,7 @@ export async function fetchProcedureLogById(
     builder = builder.eq("trainee_user_id", options.traineeId);
   }
 
-  builder = await applyTenantFilter(builder, options?.institutionId);
+  builder = applyTenantFilter(builder, options?.institutionId);
 
   const { data } = await builder.maybeSingle();
   return data ?? null;
@@ -3572,7 +3578,7 @@ export async function fetchExamById(examId: string, institutionId?: string): Pro
   }
 
   const builder = supabase.from("exams").select("*").eq("id", examId);
-  const filtered = await applyTenantFilter(builder, institutionId);
+  const filtered = applyTenantFilter(builder, institutionId);
   const { data } = await filtered.maybeSingle();
   return data ?? null;
 }

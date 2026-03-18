@@ -1,16 +1,18 @@
 import { Metadata } from "next";
 
 import { AnalyticsSectionCard } from "@/components/reports/analytics-section-card";
+import { CohortProgressCard } from "@/components/reports/cohort-progress-card";
 import { DomainPerformanceCard } from "@/components/reports/domain-performance-card";
 import { EmergencyPerformanceCard } from "@/components/reports/emergency-performance-card";
 import { EditorialCoverageCard } from "@/components/reports/editorial-coverage-card";
 import { MetricCard } from "@/components/reports/metric-card";
 import { ProcedureStatsCard } from "@/components/reports/procedure-stats-card";
 import { ProgressSummaryCard } from "@/components/reports/progress-summary-card";
+import { TraineeSnapshotCard } from "@/components/reports/trainee-snapshot-card";
 import { ValidationAlertCard } from "@/components/reports/validation-alert-card";
 import { getScopeFromRole } from "@/lib/auth/profile";
 import { requireModuleAccess } from "@/services/auth/require-module-access";
-import { fetchReportViewData } from "@/services/db/modules";
+import { fetchLongitudinalReportViewData } from "@/services/db/longitudinal-analytics";
 import type { ReportScope } from "@/types/database";
 
 export const metadata: Metadata = {
@@ -48,7 +50,7 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
     : getScopeFromRole(profile.role) === "preceptor"
     ? "preceptor"
     : "trainee";
-  const data = await fetchReportViewData(scope);
+  const data = await fetchLongitudinalReportViewData(scope);
 
   return (
     <div className="min-h-screen bg-background">
@@ -113,6 +115,22 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
           <div className="grid gap-4 md:grid-cols-3 mt-4">
             {data.procedureStats.map((stat) => (
               <ProcedureStatsCard key={stat.title} title={stat.title} value={stat.value} trend={stat.trend} />
+            ))}
+          </div>
+        </AnalyticsSectionCard>
+
+        <AnalyticsSectionCard title="Comparação por ano">
+          <div className="grid gap-4 md:grid-cols-3">
+            {data.cohortProgress.map((summary) => (
+              <CohortProgressCard key={summary.year} {...summary} />
+            ))}
+          </div>
+        </AnalyticsSectionCard>
+
+        <AnalyticsSectionCard title="Snapshots dos trainees" description="Atual vs. esperado, atividade recente e pendências">
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            {data.traineeSnapshots.map((snapshot) => (
+              <TraineeSnapshotCard key={snapshot.traineeId} {...snapshot} />
             ))}
           </div>
         </AnalyticsSectionCard>
