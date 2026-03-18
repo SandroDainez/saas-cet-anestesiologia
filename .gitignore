@@ -5,3 +5,5 @@ node_modules/
 .cache
 dist/
 *.tsbuildinfo
+.vercel
+.env*.local
