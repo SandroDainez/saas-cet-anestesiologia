@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { LocalSourceExcerptPanel } from "@/components/content-management/local-source-excerpt-panel";
 import { LocalSourceList } from "@/components/content-management/local-source-list";
+import { ModuleNavigationStrip } from "@/components/layout/module-navigation-strip";
 import { QuestionResolver } from "@/components/question-bank/question-resolver";
 import { Button } from "@/components/ui/button";
 import { requireModuleAccess } from "@/services/auth/require-module-access";
@@ -64,6 +65,8 @@ export default async function QuestionDetailPage({ params }: QuestionPageParams)
     return (
       <div className="min-h-screen bg-background">
         <main className="container space-y-8 py-10">
+          <ModuleNavigationStrip activeHref="/question-bank" />
+
           <section className="grid gap-4 lg:grid-cols-[1.2fr_1fr]">
             <div className="rounded-[1.5rem] border border-border/70 bg-card/90 p-5">
               <p className="text-xs uppercase tracking-[0.4em] text-muted-foreground">Como usar esta questão</p>

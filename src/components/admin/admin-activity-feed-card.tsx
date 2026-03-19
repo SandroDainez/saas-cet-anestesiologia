@@ -22,7 +22,7 @@ const categoryLabels: Record<AdminActivityItem["category"], string> = {
 
 export function AdminActivityFeedCard({ items }: { items: AdminActivityItem[] }) {
   return (
-    <Card className="space-y-4">
+    <Card className="space-y-4 border border-border/70 bg-card/95">
       <CardHeader className="space-y-2">
         <div className="flex items-center justify-between gap-3">
           <div>
@@ -42,21 +42,25 @@ export function AdminActivityFeedCard({ items }: { items: AdminActivityItem[] })
           </div>
         ) : (
           items.map((item) => (
-            <article key={item.id} className={`rounded-2xl border px-4 py-4 ${toneClasses[item.tone]}`}>
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <div className="flex flex-wrap items-center gap-2">
-                  <Badge className="border-border/70 bg-background/80 text-muted-foreground">
-                    {categoryLabels[item.category]}
-                  </Badge>
-                  <p className="text-sm font-semibold">{item.title}</p>
+            <article key={item.id} className={`rounded-[1.25rem] border px-4 py-4 ${toneClasses[item.tone]}`}>
+              <div className="flex flex-wrap items-start justify-between gap-2">
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Badge className="border-border/70 bg-background/80 text-muted-foreground">
+                      {categoryLabels[item.category]}
+                    </Badge>
+                    <p className="text-sm font-semibold">{item.title}</p>
+                  </div>
+                  <p className="mt-2 text-sm leading-6">
+                    <span className="font-semibold">{item.actorName}</span> · {item.detail}
+                  </p>
                 </div>
-                <p className="text-xs text-muted-foreground">
-                  {new Date(item.occurredAt).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" })}
-                </p>
+                <div className="shrink-0 text-right">
+                  <p className="text-xs text-muted-foreground">
+                    {new Date(item.occurredAt).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" })}
+                  </p>
+                </div>
               </div>
-              <p className="mt-2 text-sm">
-                <span className="font-semibold">{item.actorName}</span> · {item.detail}
-              </p>
             </article>
           ))
         )}

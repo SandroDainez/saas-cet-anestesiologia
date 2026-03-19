@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import { ModuleNavigationStrip } from "@/components/layout/module-navigation-strip";
 import { TrackCard } from "@/components/learning/track-card";
 import { Badge } from "@/components/ui/badge";
 import { isTraineeRole, requireModuleAccess } from "@/services/auth/require-module-access";
@@ -62,6 +63,8 @@ export default async function TrilhasYearPage({ params }: TrilhasYearProps) {
   return (
     <div className="min-h-screen bg-background">
       <main className="container space-y-6 py-10">
+        <ModuleNavigationStrip activeHref="/trilhas" />
+
         <header className="rounded-[1.5rem] border border-border/70 bg-card/95 p-6">
           <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
             <div className="space-y-3">

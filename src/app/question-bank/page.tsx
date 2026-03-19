@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { LocalInsightPanel } from "@/components/content-management/local-insight-panel";
+import { ModuleNavigationStrip } from "@/components/layout/module-navigation-strip";
 import { QuestionCard } from "@/components/question-bank/question-card";
 import { QuestionFilter } from "@/components/question-bank/question-filter";
 import { Badge } from "@/components/ui/badge";
@@ -33,6 +34,7 @@ const difficultyValues: QuestionDifficulty[] = ["easy", "medium", "hard"];
 const questionTypeValues: QuestionTypeEnum[] = [
   "single_choice",
   "multiple_choice",
+  "sba_true_false",
   "true_false",
   "matching",
   "case_sequential",
@@ -129,6 +131,8 @@ export default async function QuestionBankPage({ searchParams }: QuestionBankPag
   return (
     <div className="min-h-screen bg-background">
       <main className="container space-y-8 py-10">
+        <ModuleNavigationStrip activeHref="/question-bank" />
+
         <header className="rounded-[1.75rem] border border-border/70 bg-card/95 p-6 shadow-sm">
           <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
             <div className="space-y-3">

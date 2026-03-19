@@ -169,6 +169,17 @@ function applyTenantFilter(
   return builder;
 }
 
+const fallbackOptionLabels = ["A", "B", "C", "D", "E", "F"];
+
+function normalizeQuestionOptions(options: QuestionOption[]) {
+  return [...options]
+    .sort((left, right) => Number(left.display_order ?? 0) - Number(right.display_order ?? 0))
+    .map((option, index) => ({
+      ...option,
+      option_label: option.option_label?.trim() || fallbackOptionLabels[index] || String(index + 1)
+    }));
+}
+
 async function fetchClient() {
   if (!isSupabaseConfigured()) {
     return null;
@@ -631,8 +642,18 @@ export async function fetchTrackById(trackId: string): Promise<LearningTrack | n
     .eq("id", trackId);
   const filtered = applyTenantFilter(builder, await resolveInstitutionId(), { includeGlobal: true });
   const { data } = await filtered.maybeSingle();
+  if (data) {
+    return data;
+  }
 
-  return data ?? null;
+  const fallbackQuery = supabase
+    .from("learning_tracks")
+    .select("*")
+    .eq("id", trackId)
+    .maybeSingle();
+  const { data: fallbackData } = await fallbackQuery;
+
+  return fallbackData ?? null;
 }
 
 export async function fetchLearningModuleById(moduleId: string): Promise<LearningModule | null> {
@@ -837,7 +858,7 @@ function filterMockQuestions(filters: QuestionFilters): QuestionBankEntry[] {
 export async function fetchQuestionOptions(questionId: string): Promise<QuestionOption[]> {
   const supabase = await fetchClient();
   if (!supabase) {
-    return mockQuestionOptions[questionId] ?? [];
+    return normalizeQuestionOptions(mockQuestionOptions[questionId] ?? []);
   }
 
   const { data } = await supabase
@@ -846,7 +867,7 @@ export async function fetchQuestionOptions(questionId: string): Promise<Question
     .eq("question_id", questionId)
     .order("display_order", { ascending: true });
 
-  return data ?? mockQuestionOptions[questionId] ?? [];
+  return normalizeQuestionOptions(data ?? mockQuestionOptions[questionId] ?? []);
 }
 
 export async function fetchQuestionAssertions(questionId: string): Promise<QuestionAssertion[]> {
@@ -1518,6 +1539,24 @@ const mockQuestionOptions: Record<string, QuestionOption[]> = {
       is_correct: false,
       explanation: "Justiça não responde diretamente ao consentimento.",
       display_order: 3
+    },
+    {
+      id: "opt-ethics-4",
+      question_id: "question-ethics-1",
+      option_label: "D",
+      option_text: "Não maleficência como princípio exclusivo",
+      is_correct: false,
+      explanation: "Não maleficência é central, mas não substitui a autonomia na decisão consentida.",
+      display_order: 4
+    },
+    {
+      id: "opt-ethics-5",
+      question_id: "question-ethics-1",
+      option_label: "E",
+      option_text: "Paternalismo médico sem discussão prévia",
+      is_correct: false,
+      explanation: "Paternalismo rompe o processo adequado de consentimento.",
+      display_order: 5
     }
   ],
   "question-airway-1": [
@@ -1538,6 +1577,33 @@ const mockQuestionOptions: Record<string, QuestionOption[]> = {
       is_correct: false,
       explanation: "Cricotireoidostomia é uma medida extrema e não inicial.",
       display_order: 2
+    },
+    {
+      id: "opt-airway-3",
+      question_id: "question-airway-1",
+      option_label: "C",
+      option_text: "Prosseguir com novas tentativas cegas sem oxigenar",
+      is_correct: false,
+      explanation: "Repetir tentativas sem estratégia aumenta trauma e hipóxia.",
+      display_order: 3
+    },
+    {
+      id: "opt-airway-4",
+      question_id: "question-airway-1",
+      option_label: "D",
+      option_text: "Suspender a ventilação e aguardar retorno espontâneo",
+      is_correct: false,
+      explanation: "A prioridade imediata é oxigenar e estruturar o resgate.",
+      display_order: 4
+    },
+    {
+      id: "opt-airway-5",
+      question_id: "question-airway-1",
+      option_label: "E",
+      option_text: "Tentar intubação nasal às cegas como primeira alternativa",
+      is_correct: false,
+      explanation: "Não é a primeira estratégia segura nesse cenário.",
+      display_order: 5
     }
   ],
   "question-obstetric-1": [
@@ -1558,6 +1624,33 @@ const mockQuestionOptions: Record<string, QuestionOption[]> = {
       is_correct: false,
       explanation: "A monitorização não invasiva pode ser insuficiente em pré-eclâmpsia grave.",
       display_order: 2
+    },
+    {
+      id: "opt-obstetric-3",
+      question_id: "question-obstetric-1",
+      option_label: "C",
+      option_text: "Cateter venoso central isolado como único monitor adicional",
+      is_correct: false,
+      explanation: "Não substitui a necessidade de leitura pressórica contínua.",
+      display_order: 3
+    },
+    {
+      id: "opt-obstetric-4",
+      question_id: "question-obstetric-1",
+      option_label: "D",
+      option_text: "Capnografia isolada antes da indução",
+      is_correct: false,
+      explanation: "Capnografia é importante, mas não resolve a necessidade hemodinâmica crítica.",
+      display_order: 4
+    },
+    {
+      id: "opt-obstetric-5",
+      question_id: "question-obstetric-1",
+      option_label: "E",
+      option_text: "Nenhum monitor invasivo se a saturação estiver estável",
+      is_correct: false,
+      explanation: "Estabilidade ventilatória não exclui risco pressórico grave.",
+      display_order: 5
     }
   ],
   "question-pharm-1": [
@@ -1587,6 +1680,24 @@ const mockQuestionOptions: Record<string, QuestionOption[]> = {
       is_correct: false,
       explanation: "Não é a melhor escolha diante de instabilidade circulatória.",
       display_order: 3
+    },
+    {
+      id: "opt-pharm-4",
+      question_id: "question-pharm-1",
+      option_label: "D",
+      option_text: "Midazolam em dose plena de indução",
+      is_correct: false,
+      explanation: "Não oferece o melhor perfil para indução rápida nesse choque.",
+      display_order: 4
+    },
+    {
+      id: "opt-pharm-5",
+      question_id: "question-pharm-1",
+      option_label: "E",
+      option_text: "Cetamina em dose dissociativa alta sem titulação",
+      is_correct: false,
+      explanation: "Pode ser útil em alguns cenários, mas a formulação aqui não representa a melhor conduta padrão.",
+      display_order: 5
     }
   ],
   "question-monitoring-1": [
@@ -1607,6 +1718,33 @@ const mockQuestionOptions: Record<string, QuestionOption[]> = {
       is_correct: false,
       explanation: "Pode alterar hemodinâmica, mas não explica primariamente a morfologia amortecida do traçado.",
       display_order: 2
+    },
+    {
+      id: "opt-monitoring-3",
+      question_id: "question-monitoring-1",
+      option_label: "C",
+      option_text: "Hipotermia isolada como explicação inicial",
+      is_correct: false,
+      explanation: "Não é a causa técnica imediata mais provável.",
+      display_order: 3
+    },
+    {
+      id: "opt-monitoring-4",
+      question_id: "question-monitoring-1",
+      option_label: "D",
+      option_text: "Reduzir alarmes do monitor antes de revisar o sistema",
+      is_correct: false,
+      explanation: "A conduta inicial é revisar o circuito pressurizado.",
+      display_order: 4
+    },
+    {
+      id: "opt-monitoring-5",
+      question_id: "question-monitoring-1",
+      option_label: "E",
+      option_text: "Presumir disfunção ventricular sem checar a linha",
+      is_correct: false,
+      explanation: "Interpretação clínica vem depois da exclusão de artefato.",
+      display_order: 5
     }
   ],
   "question-cardiac-1": [
@@ -1627,6 +1765,33 @@ const mockQuestionOptions: Record<string, QuestionOption[]> = {
       is_correct: false,
       explanation: "Não explica adequadamente o padrão hemodinâmico descrito.",
       display_order: 2
+    },
+    {
+      id: "opt-cardiac-3",
+      question_id: "question-cardiac-1",
+      option_label: "C",
+      option_text: "Tamponamento diagnosticado apenas pelo débito preservado",
+      is_correct: false,
+      explanation: "O caso descrito aponta mais para vasoplegia do que para fisiologia obstrutiva.",
+      display_order: 3
+    },
+    {
+      id: "opt-cardiac-4",
+      question_id: "question-cardiac-1",
+      option_label: "D",
+      option_text: "Hipovolemia leve sem necessidade de vasopressor",
+      is_correct: false,
+      explanation: "A descrição valoriza vasodilatação sistêmica importante.",
+      display_order: 4
+    },
+    {
+      id: "opt-cardiac-5",
+      question_id: "question-cardiac-1",
+      option_label: "E",
+      option_text: "Artefato de monitorização como hipótese mais provável",
+      is_correct: false,
+      explanation: "O padrão clínico descrito é compatível com complicação real pós-CEC.",
+      display_order: 5
     }
   ],
   "question-trauma-1": [
@@ -1647,6 +1812,33 @@ const mockQuestionOptions: Record<string, QuestionOption[]> = {
       is_correct: false,
       explanation: "Queda brusca de pressão agrava perfusão e piora prognóstico.",
       display_order: 2
+    },
+    {
+      id: "opt-trauma-3",
+      question_id: "question-trauma-1",
+      option_label: "C",
+      option_text: "Aguardar reanimação completa antes de qualquer controle de via aérea",
+      is_correct: false,
+      explanation: "O manejo é simultâneo e guiado por risco imediato.",
+      display_order: 3
+    },
+    {
+      id: "opt-trauma-4",
+      question_id: "question-trauma-1",
+      option_label: "D",
+      option_text: "Induzir com doses usuais altas independentemente da pressão",
+      is_correct: false,
+      explanation: "Isso aumenta o risco de colapso cardiovascular.",
+      display_order: 4
+    },
+    {
+      id: "opt-trauma-5",
+      question_id: "question-trauma-1",
+      option_label: "E",
+      option_text: "Priorizar profundidade anestésica sobre perfusão",
+      is_correct: false,
+      explanation: "A prioridade inicial é proteger perfusão e oxigenação.",
+      display_order: 5
     }
   ]
 };
@@ -2407,14 +2599,14 @@ const mockProcedureLogs: ProcedureLog[] = [
   {
     id: "log-regional-1",
     institution_id: "institution-global",
-    trainee_user_id: "trainee-001",
+    trainee_user_id: "trainee-002",
     preceptor_user_id: "preceptor-002",
     unit_id: "unit-hospital-santa",
     surgery_catalog_id: "surgery-general-appendectomy",
     procedure_catalog_id: "proc-regional-block",
     performed_on: "2025-03-02",
     trainee_year_snapshot: "ME2",
-    trainee_role: "assisted",
+    trainee_role: "performed_supervised",
     anesthesia_technique_summary: "Bloqueio do plexo lombar com ropivacaína",
     patient_profile_summary: "Paciente com dor crônica",
     difficulty_perceived: "medium",
@@ -2427,14 +2619,14 @@ const mockProcedureLogs: ProcedureLog[] = [
   {
     id: "log-line-1",
     institution_id: "institution-global",
-    trainee_user_id: "trainee-002",
+    trainee_user_id: "trainee-003",
     preceptor_user_id: "preceptor-001",
     unit_id: "unit-sim-center",
     surgery_catalog_id: "surgery-obstetric-c-section",
     procedure_catalog_id: "proc-arterial-line",
     performed_on: "2025-03-15",
     trainee_year_snapshot: "ME3",
-    trainee_role: "observed",
+    trainee_role: "performed_supervised",
     anesthesia_technique_summary: "Linha arterial após indução",
     patient_profile_summary: "Pré-eclâmpsia leve",
     difficulty_perceived: "high",

@@ -3,6 +3,7 @@ import path from "node:path";
 
 import type {
   ContentLibraryIndex,
+  ContentLibrarySourceEntry,
   ContentLibrarySnapshot,
   ContentLibrarySourceSummary,
   LocalLibraryUsage,
@@ -122,4 +123,18 @@ export async function findContentLibrarySourcesByUsage(
 
     return preferredYears.some((year) => source.applicability.includes(year));
   });
+}
+
+export async function registerContentLibrarySource(source: ContentLibrarySourceEntry) {
+  const index = await readContentLibraryIndex();
+  const deduped = index.sources.filter((existing) => existing.filePath !== source.filePath);
+  const updated = {
+    ...index,
+    sources: [...deduped, source],
+    version: index.version + 1,
+    lastUpdated: new Date().toISOString().slice(0, 10)
+  };
+
+  await fs.mkdir(path.dirname(CONTENT_LIBRARY_INDEX), { recursive: true });
+  await fs.writeFile(CONTENT_LIBRARY_INDEX, JSON.stringify(updated, null, 2));
 }

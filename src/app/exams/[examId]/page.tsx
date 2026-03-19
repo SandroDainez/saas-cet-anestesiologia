@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { LocalSourceExcerptPanel } from "@/components/content-management/local-source-excerpt-panel";
 import { LocalSourceList } from "@/components/content-management/local-source-list";
+import { ModuleNavigationStrip } from "@/components/layout/module-navigation-strip";
 import { requireModuleAccess, isPrivilegedReviewerRole, isTraineeRole } from "@/services/auth/require-module-access";
 import { getRecommendedLocalContext } from "@/services/content-library/library-context";
 import { getCompetencyYearSummary } from "@/services/curriculum/competency-matrix";
@@ -71,6 +72,8 @@ export default async function ExamDetailPage({ params }: ExamDetailPageProps) {
   return (
     <div className="min-h-screen bg-background">
       <main className="container space-y-8 py-10">
+        <ModuleNavigationStrip activeHref="/exams" />
+
         <section className="space-y-4 rounded-[1.5rem] border border-border/70 bg-card/95 p-6">
           <div className="flex flex-wrap items-center gap-2">
             <Badge className="bg-secondary/10 text-secondary-foreground">

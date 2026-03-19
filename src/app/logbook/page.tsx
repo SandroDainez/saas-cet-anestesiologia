@@ -1,9 +1,11 @@
 import Link from "next/link";
 
+import { ModuleNavigationStrip } from "@/components/layout/module-navigation-strip";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ProcedureLogCard } from "@/components/logbook/procedure-log-card";
 import { LogbookStatsCard } from "@/components/logbook/logbook-stats-card";
+import { LogbookYearSummary } from "@/components/logbook/logbook-year-summary";
 import { getScopeFromRole } from "@/lib/auth/profile";
 import { requireModuleAccess } from "@/services/auth/require-module-access";
 import { fetchInstitutionUnits, fetchLogbookStats, fetchProcedureCatalogEntries, fetchProcedureLogs, fetchProcedureSelfAssessment, fetchProcedureValidations, fetchSurgeryCatalogEntries } from "@/services/db/modules";
@@ -43,6 +45,8 @@ export default async function LogbookPage() {
   return (
     <div className="min-h-screen bg-background">
       <main className="container space-y-8 py-10">
+        <ModuleNavigationStrip activeHref="/logbook" />
+
         <header className="space-y-4">
           <div className="space-y-2">
             <Badge>Logbook</Badge>
@@ -124,6 +128,8 @@ export default async function LogbookPage() {
             accent={`${stats.frequentProcedures[0]?.count ?? 0} vezes`}
           />
         </section>
+
+        <LogbookYearSummary logs={logs} />
 
         {stats.expectedProgress ? (
           <section className="rounded-[1.5rem] border border-border/70 bg-card/90 p-5">

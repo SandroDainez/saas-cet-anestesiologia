@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { ModuleNavigationStrip } from "@/components/layout/module-navigation-strip";
 import { TrackCard } from "@/components/learning/track-card";
 import { Badge } from "@/components/ui/badge";
 import { isTraineeRole, requireModuleAccess } from "@/services/auth/require-module-access";
@@ -55,6 +56,8 @@ export default async function TrilhasPage() {
   return (
     <div className="min-h-screen bg-background">
       <main className="container space-y-8 py-10">
+        <ModuleNavigationStrip activeHref="/trilhas" />
+
         <header className="space-y-3">
           <Badge>Trilhas oficiais</Badge>
           <h1 className="text-3xl font-semibold">Trilhas de estudo por ano</h1>
